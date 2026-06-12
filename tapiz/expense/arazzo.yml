@@ -1,0 +1,140 @@
+arazzo: 1.1.0
+info:
+  title: A list of workflows for a personal finance app
+  summary: This Arazzo Description showcases workflows for managing personal finances in the app
+  description: Contains creating categories, expenses, subscriptions (recurring payments), etc.
+  version: 0.0.1
+sourceDescriptions:
+  - name: tapiz
+    url: http://localhost:4000/api/json/open_api
+    type: openapi
+  - name: category
+    url: ./tapiz/category/arazzo.yml
+    type: arazzo
+
+workflows:
+  - workflowId: createExpense
+    summary: Creates a one-time expense
+    outputs:
+      expense_id: $steps.createExpenseStep.outputs.expense_id
+      token: $steps.createUserAndCategory.outputs.token
+      category_id: $steps.createUserAndCategory.outputs.category_id
+    inputs:
+      type: object
+      required: ["email", "expense"]
+      properties:
+        email:
+          format: email
+          type: string
+        expense:
+          type: object
+          required: ["name", "amount"]
+          properties:
+            name:
+              type: string
+              minLength: 1
+            amount:
+              type: integer
+              minimum: 1
+    steps:
+      - stepId: createUserAndCategory
+        workflowId: $sourceDescriptions.category.createUserWithCategoryAndYearlyLimit
+        parameters:
+          - name: email
+            value: $inputs.email
+          - name: password
+            value: password
+          - name: password_confirmation
+            value: password
+      - stepId: createExpenseStep
+        operationPath: '{$sourceDescriptions.tapiz.url}#/paths/~1api~1json~1expenses/post'
+        requestBody:
+          contentType: application/vnd.api+json
+          payload:
+            data:
+              attributes:
+                name: $inputs.expense#/name
+                amount: $inputs.expense#/amount
+                currency: "EUR"
+                category_id: $steps.createUserAndCategory.outputs.category_id
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer $steps.createUserAndCategory.outputs.token
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.body#/data/attributes/name == $inputs.expense#/name
+          - condition: $response.body#/data/attributes/amount == $inputs.expense#/amount
+        outputs:
+          expense_id: $response.body#/data/id
+      - stepId: queryCategoryWithExpense
+        operationPath: $sourceDescriptions.tapiz.url}#/paths/~1api~1json~1categories~1{id}/get
+        parameters:
+          - name: id
+            in: path
+            value: $steps.createUserAndCategory.outputs.category_id
+          - name: Authorization
+            in: header
+            value: Bearer $steps.createUserAndCategory.outputs.token
+          - name: include
+            in: query
+            value: expenses,active_limits
+        successCriteria:
+          - condition: $statusCode == 200
+          - context: $response.body
+            type: jsonpath
+            # Check that the expense id is in the list of expenses relationships
+            condition: $.data.relationships.expenses.data[?@.id == '{$steps.createExpenseStep.outputs.expense_id}']
+          # Also check that for both limits, the total_spendings is equal to the expense
+          - context: $response.body#/included
+            type: jsonpath
+            condition: $[?@.type == 'limit' && @.attributes.total_spendings == {$inputs.expense#/amount}]
+  - workflowId: deleteExpense
+    summary: Deletes an expense and verifies it is no longer reflected in the category and limits
+    inputs:
+      type: object
+      required: ["email"]
+      properties:
+        email:
+          type: string
+          format: email
+    steps:
+      - stepId: createExpenseStep
+        workflowId: createExpense
+        parameters:
+          - name: email
+            value: $inputs.email
+          - name: expense
+            value:
+              name: Some expense
+              amount: 50000
+              currency: "EUR"
+      - stepId: deleteExpenseStep
+        operationPath: '{$sourceDescriptions.tapiz.url}#/paths/~1api~1json~1expenses~1{id}/delete'
+        parameters:
+          - name: id
+            in: path
+            value: $steps.createExpenseStep.outputs.expense_id
+          - name: Authorization
+            in: header
+            value: Bearer $steps.createExpenseStep.outputs.token
+        successCriteria:
+          - condition: $statusCode == 200
+      - stepId: queryCategoryWithoutExpense
+        operationPath: $sourceDescriptions.tapiz.url#/paths/~1api~1json~1categories~1{id}/get
+        parameters:
+          - name: id
+            in: path
+            value: $steps.createExpenseStep.outputs.category_id
+          - name: Authorization
+            in: header
+            value: Bearer $steps.createExpenseStep.outputs.token
+          - name: include
+            in: query
+            value: active_limits
+        successCriteria:
+          - condition: $statusCode == 200
+          # Since we deleted the expense there shouldn't be any spending
+          - context: $response.body#/included
+            type: jsonpath
+            condition: $[?@.type == 'limit' && @.attributes.total_spendings == 0]

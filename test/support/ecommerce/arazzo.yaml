@@ -1,0 +1,47 @@
+arazzo: 1.1.0
+info:
+  title: Ecommerce Arazzo document
+  summary: Basic ecommerce for sanity and smoke testing
+  description: Workflow for creating and retrieving store items
+  version: 0.1.0
+sourceDescriptions:
+  - name: ecommerce
+    url: ./test/support/ecommerce/openapi.json
+    type: openapi
+
+workflows:
+  - workflowId: createAndRetrieveItem
+    summary: Creates and retrieves an item
+    inputs:
+      type: object
+      additionalProperties: false
+      required: ["item"]
+      properties:
+        item:
+          "$ref": '{$sourceDescriptions.ecommerce.url}#/components/schemas/Item'
+    outputs:
+      itemId: $steps.createItemStep.outputs.itemId
+    steps:
+      - stepId: createItemStep
+        description: Creates an item
+        operationId: createItem
+        requestBody:
+          contentType: application/json
+          payload: $inputs.item
+        outputs:
+          itemId: $response.body#/id
+        successCriteria:
+          # - condition: $statusCode == 201
+          - condition: $response.body#/price == $inputs.item#/price
+          - condition: $response.body#/name == $inputs.item#/name
+      - stepId: getItemStep
+        operationPath: '#/paths/~1items~1{id}/get'
+        parameters:
+          - name: id
+            in: path
+            value: $steps.createItemStep.outputs.itemId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/id == $steps.createItemStep.outputs.itemId
+          - condition: $response.body#/price == $inputs.item#/price
+          - condition: $response.body#/name == $inputs.item#/name

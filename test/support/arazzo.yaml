@@ -1,0 +1,58 @@
+arazzo: 1.0.1
+info:
+  title: Bookstore workflow
+  summary: This is a proof of concept for auto-test generation
+  description: Workflow for creating and retrieving books
+  version: "0.1"
+sourceDescriptions:
+  - name: bookStore
+    url: http://127.0.0.1:8000/openapi.json
+    type: openapi
+
+workflows:
+  - workflowId: createAndRetrieveBook
+    summary: Creates and retrieves a book
+    inputs:
+      "$ref": "{$sourceDescriptions.bookStore.url}#/components/schemas/Book"
+    outputs:
+      bookId: $steps.createBookStep.outputs.bookId
+    steps:
+      - stepId: createBookStep
+        description: Creates a book
+        operationId: createBook
+        requestBody:
+          contentType: application/json
+          payload: $inputs.book
+        outputs:
+          bookId: $response.body#/id
+          bookIsbn: $request.body#/isbn
+          bookAuthor: $request.body#/author
+          bookTitle: $request.body#/title
+        successCriteria:
+          - condition: $statusCode == 201
+      - stepId: getBookStep
+        operationId: getBook
+        description: Gets the created book by its id
+        parameters:
+          - name: bookId
+            in: path
+            value: $steps.createBookStep.outputs.bookId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/isbn == $steps.createBookStep.outputs.bookIsbn
+          - condition: $response.body#/author == $steps.createBookStep.outputs.bookAuthor
+          - condition: $response.body#/title == $steps.createBookStep.outputs.bookTitle
+          - condition: $response.body#/bookId == $steps.createBookStep.outputs.bookId
+      - stepId: listBooksStep
+        operationId: listBooks
+        description: The created book is contained in the books list
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: count($response.body#[?@.id == $steps.createBookStep.outputs.bookId]) == 1
+components:
+  failureActions:
+    refreshToken:
+      name: refreshExpiredToken
+      type: end
+      criteria:
+        - condition: $statusCode == 401

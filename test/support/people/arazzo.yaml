@@ -1,0 +1,48 @@
+arazzo: 1.1.0
+info:
+  title: People DB
+  summary: Basic Arazzo document to test more complex queries
+  description: Retrieves people
+  version: 0.1.0
+sourceDescriptions:
+  - name: peopleService
+    url: ./openapi.json
+    type: openapi
+
+workflows:
+  - workflowId: getPeople
+    summary: Retrieves people from the archive
+    outputs:
+      firstMatchingName: $steps.getPeopleStep.outputs.firstMatchingName
+    inputs:
+      type: object
+      additionalProperties: false
+      required: ["min_age", "name"]
+      properties:
+        min_age:
+          type: integer
+          minimum: 0
+        name:
+          type: string
+          minLength: 1
+    steps:
+      - stepId: getPeopleStep
+        description: Lists people
+        operationId: getPeople
+        parameters:
+          - name: min_age
+            in: query
+            value: $inputs.min_age
+          - name: name
+            in: query
+            value: $inputs.name
+        successCriteria:
+          - condition: $statusCode == 200
+          - type: regex
+            context: $response.body#/0/name
+            condition: "^$inputs.name"
+          - type: jsonpath
+            context: $response.body
+            condition: $[?@.age >= $inputs.min_age]
+        outputs:
+          firstMatchingName: $response.body#/0/name
