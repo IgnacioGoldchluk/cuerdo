@@ -1,7 +1,9 @@
 defmodule Cuerdo.ArazzoCase do
   @moduledoc """
-  Automated test runner case for Arazzo documents
+  Provides an `ExUnit.CaseTemplate` for automatically generating tests from Arazzo workflows.
 
+  Each workflow in the document is executed as a test, with automatically generated inputs derived
+  from the workfow's input schema.
 
   ## Basic Usage
   Define `use Cuerdo.ArazzoCase` in your test module, and add `arazzo_document_test` macro
@@ -16,7 +18,7 @@ defmodule Cuerdo.ArazzoCase do
 
   ## Filtering workflows
   You can opt-in and opt-out from executing specific workflows via the `:only` and `:exclude`
-  options respectively. Some examples
+  options respectively. For example:
 
   ```elixir
   # Executes "workflow1" and "workflow2"
@@ -29,8 +31,8 @@ defmodule Cuerdo.ArazzoCase do
   arazzo_document_test only: ["workflow1", "workflow2"], exclude: ["workflow2"], document: ...
   ```
 
-  ## Fine-tuning input
-  Consider for example a "book" input containing the book's title, author and ISBN
+  ## Customizing Generated Inputs
+  Consider for example a "book" input containing the book's title, author and ISBN:
   ```json
     {
       "type": "object",
@@ -42,14 +44,11 @@ defmodule Cuerdo.ArazzoCase do
       }
     }
   ```
-  ISBNs consist of 13 digits, where the last digit is a check digit. In order for an ISBN
-  to be valid, the total weighted sum must be a multiple of 10. If the service under test
-  checks that the ISBN is valid then tests will fail because JSON Schema cannot express
-  this constraint and invalid ISBNs will be generated.
+  Valid ISBNs cannot be generated from JSON schemas. Values might match the regular expression
+  while failing the checksum validation. We can work around this issue via
+  the `:transform_inputs` option.
 
-  We can work around this issue via the `:transform_inputs` option.
-
-  First, let's define a function that generates valid ISBN identifiers
+  Define a function that generates valid ISBN identifiers:
   ```elixir
   defmodule MyModule do
     def valid_isbn do
@@ -71,7 +70,8 @@ defmodule Cuerdo.ArazzoCase do
     end
   ```
 
-  Then we will define a function that receives a book input and inserts the valid ISBN
+  Define a transformation function that replaces the generated ISBN with a valid one. Notice
+  that the fuction **must** return a `t:StreamData.t/1` generator:
   ```elixir
   def with_valid_isbn(book) do
     StreamData.bind(valid_isbn(), fn isbn ->
@@ -79,10 +79,10 @@ defmodule Cuerdo.ArazzoCase do
     end)
   end
   ```
-  Finally, in the `arazzo_document_test` definition we have to add `:transform_inputs` option
-  with the name of the workflow and the function as `{Module, :function_name, [args]}`.
-  The generated value will be passed through the function we defineds, ensuring that we test
-  the workflow with valid data.
+
+  Pass the transformaion function through `:transform_inputs` option, as an MFA tuple.
+  The function will be called for every input generated for the specified workflow, before
+  starting to execut the first workflow step:
   ```elixir
   defmodule MyModuleTest do
     use Cuerdo.ArazzoCase
@@ -94,27 +94,26 @@ defmodule Cuerdo.ArazzoCase do
   end
   ```
 
-  ## Multiple arazzo_document_test
-  You can define multipel `arazzo_document_test` in the same module. This is useful if, for example,
-  you have an expensive workflow that you want to run fewer times, or if you want to run workflows
-  both with default generated inputs and custom inputs
+  ## Running the same document multiple times
+  Declaring multiple `arazzo_document_test` allows for different execution strategies for
+  the same document, such as:
+  - Running expensive/slower workflows fewer times
+  - Running workflows with different input transformations
+
   ```elixir
   defmodule MyArazzoTest do
     use Cuerdo.ArazzoCase
 
-    arazzo_document_test max_runs: 20,
-                         exclude: ["expensiveWorkflowId"],
+    arazzo_document_test transform_inputs: %{"workflowId" => {Module, :function, []}},
                          document: YamlElixir.read_from_file!("path/to/arazzo.yaml")
 
-    arazzo_document_test max_runs: 3,
-                         only: ["expensiveWorkflowId"],
-                         document: YamlElixir.read_from_file!("path/to/arazzo.yaml")
+    arazzo_document_test document: YamlElixir.read_from_file!("path/to/arazzo.yaml")
   end
   ```
 
-  Keep in mind that the test names are generated based on each workflow's `workflowId` field. If you
-  run the same workflows with different inputs you must use the `:prefix` option, otherwise the test
-  generation step will fail
+  Keep in mind that the test names are generated based on each workflow's `workflowId` field. If
+  the Arazzo documents contains workflows with the same name then you **must** pass the `:prefix`
+  option, otherwise the test generation will fail:
   ```elixir
   defmodule MyArazzoTest do
     use Cuerdo.ArazzoCase
@@ -123,7 +122,7 @@ defmodule Cuerdo.ArazzoCase do
                          transform_inputs: %{"workflowId" => {Module, :function, []}},
                          document: YamlElixir.read_from_file!("path/to/arazzo.yaml")
 
-    arazzo_document_test prefix: "default_inputs,
+    arazzo_document_test prefix: "default_inputs",
                          document: YamlElixir.read_from_file!("path/to/arazzo.yaml")
   end
   ```
@@ -146,21 +145,21 @@ defmodule Cuerdo.ArazzoCase do
 
   ## Options
 
-    - `:document` (`t:map/0`) - Arazzo document containing the workflows to test
+    - `:document` (`t:map/0`) - Arazzo document
     - `:only` (`list(String.t())`) - List of `workflowId` to execute from the document. If
-    provided, workflows that are not in the `:only` option are not tested.
+    provided, workflows that are not in the `:only` option are not tested. Defaults to
+    executing all workflows in the document
     - `:exclude` (`list(String.t())`) - List of `workflowId` to exclude from the document.
     If both `:only` and `:exclude` are passed then the workflows from `:only` that are not in
-    `:excluded` are executed.
-    - `:max_runs` (`t:pos_integer/0`) - The maximum number of cases to run. Defaults to `1`.
-    - `:json_schema_resolver` - The resolver to use for fetching JSON Schemas. Defaults to
-    a do-nothing resolver. Use this option if any OpenAPI document in your workflow references
-    remote schemas. Refer to [JSV Resolvers](`e:jsv:resolvers.html`) section for more information.
+    `:excluded` are executed
+    - `:max_runs` (`t:pos_integer/0`) - The maximum number of cases to run. Defaults to `1`
     - `:transform_inputs` - A map of `%{workflowId => transformation}`, where `transformation` is
     a function that generates `t:StreamData.t/1` based on the initially generated value, specified
-    as `{Module, :function_name}`, where `:function_name` is a 1-arity function.
-    `:input_transforms` is also accepted as an alias.
-    - `:prefix` - (`t:String.t/0`) - The test name prefix.
+    as `{Module, :function_name}`, where `:function_name` is a 1-arity function
+    - `:json_schema_resolver` - The resolver to use for fetching JSON Schemas. Defaults to
+    a do-nothing resolver. Use this option if any OpenAPI document in your workflow references
+    remote schemas. Refer to [JSV Resolvers](`e:jsv:resolvers.html`) section for more information
+    - `:prefix` - (`t:String.t/0`) - The test name prefix
   """
   defmacro arazzo_document_test(opts \\ []) do
     # Fine to call Code.eval_quoted here because it's for tests
@@ -210,6 +209,7 @@ defmodule Cuerdo.ArazzoCase do
                   StreamData.bind(generator, fn input -> apply(mod, f_name, [input] ++ args) end)
               end
 
+            # Switch to `property` + `check all` later
             generator
             |> Enum.take(opts[:max_runs])
             |> Enum.reduce(Context.from_document!(document), fn workflow_inputs, ctx ->

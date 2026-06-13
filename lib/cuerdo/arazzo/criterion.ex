@@ -84,7 +84,15 @@ defmodule Cuerdo.Arazzo.Criterion do
       :ok
     else
       {:match?, false} ->
-        {:error, %FailedCriterion{criterion: regex, expression: criterion_context, type: "regex"}}
+        {:ok, value} = RuntimeExpression.resolve(criterion_context, rev_path, ctx)
+
+        {:error,
+         %FailedCriterion{
+           criterion: regex,
+           expression: criterion_context,
+           type: "regex",
+           value: to_string(value)
+         }}
 
       {:error, e} = error when is_exception(e) ->
         error
@@ -96,12 +104,17 @@ defmodule Cuerdo.Arazzo.Criterion do
 
   def evaluate(%__MODULE__{type: "simple", context: nil} = criterion, rev_path, ctx) do
     %{condition: condition} = criterion
-    # Simple conditions are expanded later, there is no need to expand
-    # runtime expressions like in jsonpath and regex cases
+
     case Simple.evaluate(condition, rev_path, ctx) do
-      {:ok, true} -> :ok
-      {:ok, false} -> {:error, %FailedCriterion{type: "simple", expression: condition}}
-      {:error, exc} = error when is_exception(exc) -> error
+      {:ok, true} ->
+        :ok
+
+      {:ok, false} ->
+        {:ok, value} = RuntimeExpression.resolve(condition, rev_path, ctx)
+        {:error, %FailedCriterion{type: "simple", expression: condition, value: value}}
+
+      {:error, exc} = error when is_exception(exc) ->
+        error
     end
   end
 end

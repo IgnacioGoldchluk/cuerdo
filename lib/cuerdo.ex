@@ -9,8 +9,38 @@ defmodule Cuerdo do
   either an HTTP request referencing an OpenAPI endpoint, or another workflow. For more information,
   refer to the [Arazzo official site](https://www.openapis.org/arazzo-specification).
 
-  Arazzo allows you to define workflows and acceptance criteria in a language-agnostic way. This
-  means you can test backend services written in different languages using Arazzo specification.
+  One of Cuerdo's primary goals is reducing the amount of hand-written integration tests
+  required to validate API workflows.
+  When used with `Cuerdo.ArazzoCase`, workflow inputs are automatically generated from the
+  JSON Schemas defined in the Arazzo document.
+  Each workflow is then executed multiple times with different generated inputs.
+
+  In addition to evaluating Arazzo successCriteria, Cuerdo validates that requests and responses
+  conform to the OpenAPI contract associated with each operation.
+  This includes schema validation, content type validation, required parameter checks,
+  and response status code verification.
+
+  As a result, a single Arazzo document can serve both as executable workflow documentation
+  and as a property-based test suite.
+
+  ## Quick Start
+  Define a [`arazzo_document_test`](`Cuerdo.ArazzoCase.arazzo_document_test/1`) in your test module
+  ```elixir
+  defmodule MyTest do
+    use Cuerdo.ArazzoCase
+
+    arazzo_document_test document: YamlElixir.read_from_file!("arazzo.yaml")
+  end
+  ```
+
+  Or execute a workflow directly
+  ```elixir
+  iex> inputs = %{"email" => "user@example.com", "password" => "securePassword"}
+  iex> document = YamlElixir.read_from_file!("arazzo.yaml")
+  iex> {:ok, context} = Cuerdo.Arazzo.run_workflow(inputs, "createUserWorkflow", document)
+  iex> Cuerdo.Arazzo.Context.workflow_outputs(context, "createUserWorkflow")
+  %{"token" => "userSessionToken"}
+  ```
 
   ## Usage
   Consider the following simple workflow. A single GET request with query parameters that queries
@@ -18,30 +48,19 @@ defmodule Cuerdo do
 
   ```yaml
   # specs/arazzo.yaml
-
   - workflowId: getPeople
-    summary: Retrieves people from the archive
-    outputs:
-      firstMatchingName: $steps.getPeopleStep.outputs.firstMatchingName
     inputs:
       type: object
       additionalProperties: false
-      required: ["min_age", "name"]
+      required: ["name"]
       properties:
-        min_age:
-          type: integer
-          minimum: 0
         name:
           type: string
           minLength: 1
     steps:
       - stepId: getPeopleStep
-        description: Lists people
         operationId: getPeople
         parameters:
-          - name: min_age
-            in: query
-            value: $inputs.min_age
           - name: name
             in: query
             value: $inputs.name
@@ -50,9 +69,6 @@ defmodule Cuerdo do
           - type: regex
             context: $response.body#/0/name
             condition: "^$inputs.name"
-          - type: jsonpath
-            context: $response.body
-            condition: $[?@.age >= $inputs.min_age]
         outputs:
           firstMatchingName: $response.body#/0/name
     ```
@@ -62,18 +78,15 @@ defmodule Cuerdo do
   example
 
   ```elixir
-  inputs = %{"min_age" => 20, "name" => "John"}
+  inputs = %{"name" => "John"}
   arazzo_document = YamlElixir.read_from_file!("path/to/arazzo.yaml")
   {:ok, context} = Cuerdo.Arazzo.run_workflow(inputs, "getPeople", arazzo_document)
   ```
 
-  If the workflow executed successfully, a `t:Cuerdo.Arazzo.Context.t/0` is returned, which contains
-  the workflow outputs, steps outputs and steps request+response strcucts. You can access them using
-  the `Cuerdo.Arazzo.Context` module
-  ```elixir
-  iex> Cuerdo.Arazzo.Context.workflow_outputs(context, "getPeople")
-  %{"firstMatchingName" => "Johnathan"}
+  On success, the function returns a `t:Cuerdo.Arazzo.Context.t/0` containing workflow outputs,
+  step outputs, and request/response data for each executed step.
 
+  ```elixir
   iex> Cuerdo.Arazzo.Context.step_outputs(context, "getPeople", "getPeopleStep")
   %{"firstMatchingName" => "Johnathan"}
   ```
@@ -102,29 +115,5 @@ defmodule Cuerdo do
   - All required parameters defined in the OpenAPI operation are present in the step definition
   - The response body matches any of the schemas defined in the OpenAPI operation based on the
   Content-Type response header and response status code
-
-  ## Unsupported features and limitations
-
-  ### AsyncAPI
-  All steps and workflows are assumed to execute synchronously and in the order they are defined.
-  AsyncAPI features and fields are unsupported as there is no current way of validating that a
-  message was pusblished to an out-of-band broker or queue
-
-  ### Workflow
-  - `dependsOn`: The field is ignored. If a workflow depends on another workflow then it should
-    define a step that references the dependency.
-  - `successActions` and `failureActions` are ignored.
-
-  ### Step
-  - `channelPath`, `correlationId`, `action`: Used exclusively by AsyncAPI.
-  - `onSuccess` and `onFailure`: Same as `successActions` and `failureActions` from [Workflow](#module-workflow)
-  - `in: "cookie"`
-  - `dependsOn`: Same as [Workflow](#module-workflow)
-
-  ### Condition and Expression
-  - `xpath` and any XML functionality is unsupported
-  - `type` allows only strings. This means that JSONPath supports RFC-9535 version only,
-  and JSONPointer RFC-6901 respectively. Non-standad and legacy JSONPath and JSONPointer
-  versions are unsupported.
   """
 end

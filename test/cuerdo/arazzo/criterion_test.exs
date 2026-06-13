@@ -76,7 +76,8 @@ defmodule Cuerdo.Arazzo.CriterionTest do
          %FailedCriterion{
            expression: "$response.body#/name",
            criterion: criterion.condition,
-           type: criterion.type
+           type: criterion.type,
+           value: "Alice"
          }}
 
       assert expected == Criterion.evaluate(criterion, path, ctx)

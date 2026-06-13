@@ -203,7 +203,7 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
       assert {:error, error} = Arazzo.run_workflow(inputs, workflow_id, document)
 
       expected =
-        "executing getPeople.getPeopleStep: criterion  (simple) for \"$statusCode == 200\" failed"
+        "executing getPeople.getPeopleStep: expression $statusCode == 200 (simple) failed. Evaluated to 201 == 200"
 
       assert expected == Exception.message(error)
     end
