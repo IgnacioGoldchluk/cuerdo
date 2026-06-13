@@ -131,6 +131,7 @@ defmodule Cuerdo.ArazzoCase do
 
   alias Cuerdo.Arazzo
   alias Cuerdo.Arazzo.Context
+  alias Cuerdo.ArazzoCase.Result
   alias RockSolid.Resolution.Resolvers.DummyResolver
 
   using do
@@ -187,40 +188,19 @@ defmodule Cuerdo.ArazzoCase do
         quote do
           test unquote(test_name) do
             workflow_id = unquote(workflow_id)
-            inputs_schema = unquote(Macro.escape(workflow.inputs))
             document = unquote(Macro.escape(document))
             opts = unquote(Macro.escape(evaluated_opts))
 
-            generator =
-              case Arazzo.build_schema(inputs_schema, Context.from_document!(document)) do
-                {:ok, schema} ->
-                  RockSolid.from_schema(schema, resolver: opts[:json_schema_resolver])
+            run_all(workflow_id, document, opts)
+            |> Enum.reject(fn %Result{status: status} -> status == :passed end)
+            |> case do
+              [] ->
+                :ok
 
-                {:error, exc} ->
-                  raise exc
-              end
-
-            generator =
-              case Map.get(opts[:transform_inputs], workflow_id) do
-                nil ->
-                  generator
-
-                {mod, f_name, args} ->
-                  StreamData.bind(generator, fn input -> apply(mod, f_name, [input] ++ args) end)
-              end
-
-            # Switch to `property` + `check all` later
-            generator
-            |> Enum.take(opts[:max_runs])
-            |> Enum.reduce(Context.from_document!(document), fn workflow_inputs, ctx ->
-              case Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) do
-                {:ok, updated_ctx} ->
-                  Context.merge_cache(ctx, updated_ctx)
-
-                {:error, exc} ->
-                  raise "For input #{inspect(workflow_inputs)}: #{Exception.message(exc)}"
-              end
-            end)
+              failures ->
+                msg = Enum.map_join(failures, "\n", &Result.format_message/1)
+                raise msg
+            end
           end
         end
       end
@@ -228,6 +208,58 @@ defmodule Cuerdo.ArazzoCase do
     case tests do
       [] -> quote(do: :ok)
       tests -> {:__block__, [], tests}
+    end
+  end
+
+  @doc false
+  def run_all(workflow_id, arazzo_document, opts) do
+    with {:ok, %Context{} = ctx} <- Context.from_document(arazzo_document),
+         %Arazzo.Workflow{} = workflow = Arazzo.Document.workflow(ctx.document, workflow_id),
+         {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx) do
+      generator(schema, workflow_id, opts)
+      |> Enum.take(opts[:max_runs])
+      |> Enum.reduce({[], ctx}, fn workflow_inputs, {results, ctx} ->
+        case run_workflow(workflow_inputs, workflow_id, ctx) do
+          {time_ms, {:ok, updated_ctx}} ->
+            result = %Result{
+              workflow_id: workflow_id,
+              inputs: workflow_inputs,
+              execution_time_ms: time_ms,
+              status: :passed
+            }
+
+            {[result | results], Context.merge_cache(ctx, updated_ctx)}
+
+          {time_ms, {:error, exc}} ->
+            result = %Result{
+              workflow_id: workflow_id,
+              inputs: workflow_inputs,
+              execution_time_ms: time_ms,
+              status: :failed,
+              reason: exc
+            }
+
+            {[result | results], ctx}
+        end
+      end)
+      |> then(&elem(&1, 0))
+    else
+      {:error, exc} when is_exception(exc) ->
+        [%Result{workflow_id: workflow_id, status: :error, reason: exc}]
+    end
+  end
+
+  # Runs timed workflow
+  defp run_workflow(workflow_inputs, workflow_id, ctx) do
+    :timer.tc(fn -> Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) end, :millisecond)
+  end
+
+  defp generator(schema, workflow_id, opts) do
+    base = RockSolid.from_schema(schema, resolver: opts[:json_schema_resolver])
+
+    case Map.get(opts[:transform_inputs], workflow_id) do
+      nil -> base
+      {mod, func, args} -> StreamData.bind(base, fn val -> apply(mod, func, [val] ++ args) end)
     end
   end
 
