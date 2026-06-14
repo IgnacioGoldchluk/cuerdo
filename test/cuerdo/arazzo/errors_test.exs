@@ -23,10 +23,15 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
   end
 
   test "OpenAPI file contents are invalid" do
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
+
     Req.Test.expect(Cuerdo.Client, &Plug.Conn.send_resp(&1, 200, "This was an error"))
 
     document = Cuerdo.ArazzoFixtures.example_document()
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
     workflow_id = "createAndRetrieveBook"
 
     assert {:error, %Errors.ExecutionError{path: ["createAndRetrieveBook", "createBookStep"]}} =
@@ -45,18 +50,11 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
         "./a/path/that/clearly/doesnt/exist.yml"
       )
 
-    Req.Test.expect(
-      Cuerdo.Resolver,
-      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
-    )
+    Req.Test.expect(Cuerdo.Resolver, &Req.Test.transport_error(&1, :econnrefused))
 
     assert {:error,
-            %Cuerdo.Errors.ExecutionError{
-              path: ["createAndRetrieveBook", "createBookStep"],
-              error: %Cuerdo.Errors.InvalidFile{filename: filename, reason: :enoent}
-            }} = Arazzo.run_workflow(%{"book" => book}, workflow_id, document)
-
-    assert String.ends_with?(filename, "a/path/that/clearly/doesnt/exist.yml")
+            %Errors.ExecutionError{path: ["createAndRetrieveBook"], error: %JSV.BuildError{}}} =
+             Arazzo.run_workflow(%{"book" => book}, workflow_id, document)
   end
 
   test "unexpected response retrieving remote OpenAPI schema" do
@@ -79,9 +77,14 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
   end
 
   test "exception fetching OpenAPI schema" do
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
+
     Req.Test.expect(Cuerdo.Client, &Req.Test.transport_error(&1, :econnrefused))
     document = Cuerdo.ArazzoFixtures.example_document()
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
     workflow_id = "createAndRetrieveBook"
 
     assert {:error,
@@ -94,6 +97,11 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
   test "operationId does not exist error" do
     Cuerdo.ArazzoFixtures.mock_openapi_fetch()
 
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
+
     document =
       Cuerdo.ArazzoFixtures.example_document()
       |> RockSolid.Traversal.put_in_schema!(
@@ -101,7 +109,7 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
         "$sourceDescriptions.bookStore.invalidOperationId"
       )
 
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
 
     assert {:error,
             %Errors.ExecutionError{

@@ -2,8 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+- feat: Validate `workflow_inputs` argument matches `inputs` JSON schema
+- fix: Use `json_schema_resolver` when validating workflow inputs, request body schema and response body schema
+
 ## 0.1.1 [2026-06-13]
-- Add evaluated expression for `FailedCriterion` `"simple"` and `"regex"` type
+- internal: Add evaluated expression for `FailedCriterion` `"simple"` and `"regex"` type
 
 ## 0.1.0 [2026-06-12]
 Initial version

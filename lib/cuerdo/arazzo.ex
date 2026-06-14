@@ -12,7 +12,8 @@ defmodule Cuerdo.Arazzo do
     RequestBody,
     Response,
     RuntimeExpression,
-    Step
+    Step,
+    Workflow
   }
 
   alias Cuerdo.Errors.ExecutionError
@@ -37,6 +38,7 @@ defmodule Cuerdo.Arazzo do
          ctx = Context.put_inputs(ctx, workflow_id, workflow_inputs),
          base_rev_path = [idx, "workflows"],
          workflow = Document.workflow(ctx.document, workflow_id),
+         :ok <- Workflow.validate_inputs(workflow_inputs, workflow, ctx),
          {:ok, %Context{} = ctx} <-
            run_steps(workflow.steps, base_rev_path, ctx, execution_path, workflow.parameters),
          {:ok, %Context{} = ctx} <- update_workflow_outputs(ctx, workflow_id, base_rev_path) do

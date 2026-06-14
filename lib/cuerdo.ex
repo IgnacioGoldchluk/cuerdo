@@ -110,8 +110,9 @@ defmodule Cuerdo do
   ## Validations
   On top of the validations defined by `successCriteria` field, the following non-Arazzo validations
   are performed at every step:
+  - The workflow inptus match the `inputs` schema in the Arazzo document
   - The request Content-Type header matches any of the Content-Type defined in the OpenAPI operation
-  - The request body matches the schema defined in the OpenAPI operation.
+  - The request body matches the schema defined in the OpenAPI operation
   - All required parameters defined in the OpenAPI operation are present in the step definition
   - The response body matches any of the schemas defined in the OpenAPI operation based on the
   Content-Type response header and response status code

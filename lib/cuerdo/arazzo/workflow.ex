@@ -4,7 +4,10 @@ defmodule Cuerdo.Arazzo.Workflow do
   """
   import Cuerdo.Arazzo.Utils
 
-  alias Cuerdo.Arazzo.{FailureAction, Output, Parameter, Step, SuccessAction}
+  alias Cuerdo.Arazzo
+  alias Cuerdo.Arazzo.{Context, FailureAction, Output, Parameter, Step, SuccessAction}
+
+  alias Cuerdo.Errors.InvalidInputs
 
   use Cuerdo.Object,
     schema: %{
@@ -27,4 +30,28 @@ defmodule Cuerdo.Arazzo.Workflow do
       parameters:
         Zoi.array(Parameter.schema() |> or_reusable(), unique_items: true) |> Zoi.default([])
     }
+
+  @type t :: %__MODULE__{}
+
+  @doc """
+  Validates the workflow inputs match the defined inputs schema.
+  """
+  @spec validate_inputs(any(), t(), Context.t()) :: :ok | {:error, Exception.t()}
+  def validate_inputs(
+        workflow_inputs,
+        %__MODULE__{} = workflow,
+        %Context{} = context
+      ) do
+    with {:ok, inputs_schema} <- Arazzo.build_schema(workflow.inputs, context),
+         {:ok, root} <- JSV.build(inputs_schema, resolver: Cuerdo.Resolver),
+         {:ok, _} <- JSV.validate(workflow_inputs, root) do
+      :ok
+    else
+      {:error, %JSV.ValidationError{} = exc} ->
+        {:error, %InvalidInputs{inputs: workflow_inputs, message: Exception.message(exc)}}
+
+      {:error, exc} = error when is_exception(exc) ->
+        error
+    end
+  end
 end

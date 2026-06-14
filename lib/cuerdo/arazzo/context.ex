@@ -60,14 +60,6 @@ defmodule Cuerdo.Arazzo.Context do
     end
   end
 
-  @doc false
-  def from_document!(document, opts \\ []) do
-    case from_document(document, opts) do
-      {:ok, context} -> context
-      {:error, exc} when is_exception(exc) -> raise exc
-    end
-  end
-
   @doc """
   Same as `new/2` but raises on error
   """
