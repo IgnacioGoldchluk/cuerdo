@@ -215,7 +215,8 @@ defmodule Cuerdo.ArazzoCase do
 
   @doc false
   def run_all(workflow_id, arazzo_document, opts) do
-    with {:ok, %Context{} = ctx} <- Context.from_document(arazzo_document),
+    with {:ok, %Context{} = ctx} <-
+           Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
          %Arazzo.Workflow{} = workflow = Arazzo.Document.workflow(ctx.document, workflow_id),
          {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx) do
       generator(schema, workflow_id, opts)
