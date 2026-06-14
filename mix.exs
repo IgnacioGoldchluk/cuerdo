@@ -2,7 +2,7 @@ defmodule Cuerdo.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/IgnacioGoldchluk/cuerdo"
-  @version "0.1.1"
+  @version "0.2.0"
 
   def project do
     [
@@ -49,9 +49,9 @@ defmodule Cuerdo.MixProject do
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       # YAML syntax highlighting in exdoc
-      {:makeup, "~> 1.0"},
-      {:makeup_elixir, "~> 1.0"},
-      {:makeup_syntect, "~> 0.1"}
+      {:makeup, "~> 1.0", only: :dev, runtime: false},
+      {:makeup_elixir, "~> 1.0", only: :dev, runtime: false},
+      {:makeup_syntect, "~> 0.1", only: :dev, runtime: false}
     ]
   end
 
