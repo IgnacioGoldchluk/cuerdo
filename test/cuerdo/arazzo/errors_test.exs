@@ -35,7 +35,7 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
 
   test "fetching local file error" do
     document = Cuerdo.ArazzoFixtures.example_document()
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
     workflow_id = "createAndRetrieveBook"
 
     document =
@@ -44,6 +44,11 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
         ["#", "sourceDescriptions", "0", "url"],
         "./a/path/that/clearly/doesnt/exist.yml"
       )
+
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
 
     assert {:error,
             %Cuerdo.Errors.ExecutionError{
@@ -57,8 +62,13 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
   test "unexpected response retrieving remote OpenAPI schema" do
     Req.Test.expect(Cuerdo.Client, &Plug.Conn.send_resp(&1, 403, ""))
 
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
+
     document = Cuerdo.ArazzoFixtures.example_document()
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
     workflow_id = "createAndRetrieveBook"
 
     assert {:error,
@@ -113,7 +123,12 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
         "$sourceDescriptions.bookStore"
       )
 
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
+
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
 
     assert {:error,
             %Errors.ExecutionError{
@@ -131,7 +146,12 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
         "$sourceDescriptions.theWrongSourceDescription.createBook"
       )
 
-    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-9767736-6-X"}
+    book = %{"title" => "BookTitle", "author" => "BookAuthor", "isbn" => "0-976-77366-X"}
+
+    Req.Test.expect(
+      Cuerdo.Resolver,
+      &Req.Test.json(&1, Cuerdo.ArazzoFixtures.example_openapi_json())
+    )
 
     {:error,
      %Errors.ExecutionError{

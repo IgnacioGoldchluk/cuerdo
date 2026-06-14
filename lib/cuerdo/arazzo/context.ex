@@ -3,7 +3,6 @@ defmodule Cuerdo.Arazzo.Context do
   Internal Arazzo Context. Stores workflows and steps inputs/outputs, request/response, etc.
   """
   alias Cuerdo.Arazzo.{Document, SourceDescription, Workflow}
-  alias Cuerdo.Client
   alias Cuerdo.Errors.{InvalidDocument, InvalidSourceDescription}
 
   defstruct [
@@ -18,8 +17,10 @@ defmodule Cuerdo.Arazzo.Context do
     # Steps objects can do a single request/response each, so we can store as
     # %{workflowId => %{stepId => %{request: req, response: resps}}}
     :api_calls,
-    # Resolver module to use for fetching sourceDescriptions
+    # Resolver module for building and validating JSV schemas
     :resolver,
+    # Client module for fetching sourceDescriptions
+    :client,
     # Cached remotely fetched Arazzo files and sourceDescriptions
     :cache
   ]
@@ -28,33 +29,40 @@ defmodule Cuerdo.Arazzo.Context do
 
   # Creates a new context from an unparsed document or context
   @doc false
-  @spec from_document(t() | Document.t(), module()) :: {:ok, t()} | {:error, Exception.t()}
-  def from_document(document_or_context, resolver \\ Client)
+  @spec from_document(t() | Document.t(), Keyword.t()) :: {:ok, t()} | {:error, Exception.t()}
+  def from_document(document_or_context, opts \\ [])
 
-  def from_document(%__MODULE__{} = context, _resolver), do: {:ok, context}
+  def from_document(%__MODULE__{} = context, _opts), do: {:ok, context}
 
-  def from_document(%Document{} = document, resolver) do
-    {:ok,
-     %__MODULE__{
-       document: document,
-       inputs: empty_inputs(document),
-       outputs: empty_outputs(document),
-       api_calls: empty_api_calls(document),
-       resolver: resolver,
-       cache: %{}
-     }}
+  def from_document(%Document{} = document, opts) do
+    case NimbleOptions.validate(opts, context_opts()) do
+      {:error, _reason} = error ->
+        error
+
+      {:ok, opts} ->
+        {:ok,
+         %__MODULE__{
+           document: document,
+           inputs: empty_inputs(document),
+           outputs: empty_outputs(document),
+           api_calls: empty_api_calls(document),
+           resolver: Keyword.fetch!(opts, :resolver),
+           client: Keyword.fetch!(opts, :client),
+           cache: %{}
+         }}
+    end
   end
 
-  def from_document(arazzo_document, resolver) do
-    case new(arazzo_document, resolver) do
+  def from_document(arazzo_document, opts) do
+    case new(arazzo_document, opts) do
       {:ok, context} -> {:ok, context}
       {:error, errors} -> {:error, %InvalidDocument{errors: errors}}
     end
   end
 
   @doc false
-  def from_document!(document, resolver \\ Client) do
-    case from_document(document, resolver) do
+  def from_document!(document, opts \\ []) do
+    case from_document(document, opts) do
       {:ok, context} -> context
       {:error, exc} when is_exception(exc) -> raise exc
     end
@@ -64,8 +72,8 @@ defmodule Cuerdo.Arazzo.Context do
   Same as `new/2` but raises on error
   """
   @spec new!(map(), module()) :: t()
-  def new!(document_data, resolver \\ Client) when is_map(document_data) do
-    case new(document_data, resolver) do
+  def new!(document_data, opts \\ []) when is_map(document_data) do
+    case new(document_data, opts) do
       {:ok, %__MODULE__{} = ctx} -> ctx
       {:error, errors} when is_list(errors) -> raise InvalidDocument, errors: errors
     end
@@ -74,22 +82,20 @@ defmodule Cuerdo.Arazzo.Context do
   @doc """
   Creates a new context
   """
-  @spec new(map(), module()) :: {:ok, t()} | {:error, Exception.t()}
-  def new(document_data, resolver \\ Client) when is_map(document_data) do
-    case Document.new(document_data) do
-      {:ok, %Document{} = document} ->
-        {:ok,
-         %__MODULE__{
-           document: document,
-           inputs: empty_inputs(document),
-           outputs: empty_outputs(document),
-           api_calls: empty_api_calls(document),
-           resolver: resolver,
-           cache: %{}
-         }}
-
-      error ->
-        error
+  @spec new(map(), Keyword.t()) :: {:ok, t()} | {:error, Exception.t()}
+  def new(document_data, opts \\ []) when is_map(document_data) do
+    with {:ok, opts} <- NimbleOptions.validate(opts, context_opts()),
+         {:ok, %Document{} = document} <- Document.new(document_data) do
+      {:ok,
+       %__MODULE__{
+         document: document,
+         inputs: empty_inputs(document),
+         outputs: empty_outputs(document),
+         api_calls: empty_api_calls(document),
+         resolver: Keyword.fetch!(opts, :resolver),
+         client: Keyword.fetch!(opts, :client),
+         cache: %{}
+       }}
     end
   end
 
@@ -128,7 +134,7 @@ defmodule Cuerdo.Arazzo.Context do
   defp resolve_source_description(context, %SourceDescription{} = source_description) do
     %{name: name, url: url} = source_description
 
-    case context.resolver.fetch_schema(url) do
+    case context.client.fetch_schema(url) do
       {:ok, schema} when is_map(schema) ->
         schema =
           case source_description.type do
@@ -298,5 +304,12 @@ defmodule Cuerdo.Arazzo.Context do
         [%SourceDescription{name: name}] = ctx.document.sourceDescriptions
         name
     end
+  end
+
+  defp context_opts do
+    [
+      client: [type: :atom, default: Cuerdo.Client],
+      resolver: [type: :atom, default: Cuerdo.Resolver]
+    ]
   end
 end

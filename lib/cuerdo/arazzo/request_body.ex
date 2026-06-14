@@ -86,7 +86,7 @@ defmodule Cuerdo.Arazzo.RequestBody do
            {:matching_body, HTTP.matching_body(content_type, operation.requestBody.content)},
          {:ok, source_description, _} =
            Context.fetch_source_description(ctx, operation.source_description_name),
-         :ok <- HTTP.validate_body(body, schema, source_description) do
+         :ok <- HTTP.validate_body(body, schema, source_description, ctx.resolver) do
       :ok
     else
       {:matching_body, nil} ->

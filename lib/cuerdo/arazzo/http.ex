@@ -10,21 +10,21 @@ defmodule Cuerdo.Arazzo.HTTP do
 
   Source description must be an OpenAPI map
   """
-  @spec validate_body(any(), any(), map()) :: :ok | {:error, Exception.t()}
-  def validate_body(body, schema, source_description)
+  @spec validate_body(any(), any(), map(), module()) :: :ok | {:error, Exception.t()}
+  def validate_body(body, schema, source_description, resolver)
 
-  def validate_body(_, %{"components" => _}, _) do
+  def validate_body(_, %{"components" => _}, _, _) do
     {:error, %InvalidRequest{message: "operation schema contains ambiguous key: 'components'"}}
   end
 
-  def validate_body(request_body, operation_schema, openapi_schema) do
+  def validate_body(request_body, operation_schema, openapi_schema, resolver) do
     schema =
       case Map.get(openapi_schema, "components") do
         nil -> operation_schema
         components -> Map.put(operation_schema, "components", components)
       end
 
-    with {:ok, root_schema} <- JSV.build(schema, resolver: Cuerdo.Resolver),
+    with {:ok, root_schema} <- JSV.build(schema, resolver: resolver),
          {:ok, _} <- JSV.validate(request_body, root_schema) do
       :ok
     else
@@ -33,7 +33,7 @@ defmodule Cuerdo.Arazzo.HTTP do
       {:error, %JSV.ValidationError{} = e} when is_binary(request_body) ->
         case JSON.decode(request_body) do
           {:ok, decoded} ->
-            validate_body(decoded, operation_schema, openapi_schema)
+            validate_body(decoded, operation_schema, openapi_schema, resolver)
 
           _ ->
             {:error, e}

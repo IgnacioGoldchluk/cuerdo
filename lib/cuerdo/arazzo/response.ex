@@ -31,7 +31,7 @@ defmodule Cuerdo.Arazzo.Response do
          {:ok, source_description, _} =
            Context.fetch_source_description(ctx, source_description_name),
          %{schema: schema} = matching_response,
-         :ok <- HTTP.validate_body(body, schema, source_description) do
+         :ok <- HTTP.validate_body(body, schema, source_description, ctx.resolver) do
       :ok
     else
       {:nil?, true} ->

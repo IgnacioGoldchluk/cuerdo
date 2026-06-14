@@ -263,10 +263,7 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
 
       ctx =
         Context.new!(example_document())
-        |> Context.put_source_description(
-          "bookStore",
-          example_openapi_json()
-        )
+        |> Context.put_source_description("bookStore", example_openapi_json())
 
       assert :ok == RequestBody.matches(body, operation, ctx)
 

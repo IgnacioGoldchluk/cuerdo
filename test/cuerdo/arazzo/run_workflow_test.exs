@@ -49,10 +49,26 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
             %{"condition" => "$response.body#/name == $inputs.itemNew#/name"}
           ]
         )
+        |> RockSolid.Traversal.put_in_schema!(
+          ["workflows", "0", "inputs"],
+          %{
+            "type" => "object",
+            "additionalProperties" => false,
+            "required" => ["item", "itemNew"],
+            "properties" => %{
+              "item" => %{
+                "$ref" => "{$sourceDescriptions.ecommerce.url}#/components/schemas/Item"
+              },
+              "itemNew" => %{
+                "$ref" => "{$sourceDescriptions.ecommerce.url}#/components/schemas/Item"
+              }
+            }
+          }
+        )
 
       inputs = %{
         "item" => %{"name" => "Shoes", "price" => 12_345},
-        "itemNew" => %{"name" => "newShoes", "pice" => 67_890}
+        "itemNew" => %{"name" => "newShoes", "price" => 67_890}
       }
 
       expected_item = %{"name" => "newShoes", "price" => 12_345}

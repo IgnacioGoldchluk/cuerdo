@@ -129,6 +129,8 @@ defmodule Cuerdo.ArazzoCase do
   """
   use ExUnit.CaseTemplate
 
+  require Logger
+
   alias Cuerdo.Arazzo
   alias Cuerdo.Arazzo.Context
   alias Cuerdo.ArazzoCase.Result
@@ -228,6 +230,8 @@ defmodule Cuerdo.ArazzoCase do
               status: :passed
             }
 
+            Logger.debug(Result.format_message(result), ansi_color: :green)
+
             {[result | results], Context.merge_cache(ctx, updated_ctx)}
 
           {time_ms, {:error, exc}} ->
@@ -238,6 +242,8 @@ defmodule Cuerdo.ArazzoCase do
               status: :failed,
               reason: exc
             }
+
+            Logger.debug(Result.format_message(result), ansi_color: :red)
 
             {[result | results], ctx}
         end
