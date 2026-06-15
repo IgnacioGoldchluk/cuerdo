@@ -40,7 +40,7 @@ defmodule Cuerdo.MixProject do
     [
       {:zoi, "~> 0.18"},
       {:yaml_elixir, "~> 2.12"},
-      {:rock_solid, "~> 0.0.8"},
+      {:rock_solid, "~> 0.0.9"},
       {:json_path, "~> 0.4"},
       {:jsv, "~> 0.19"},
       {:req, "~> 0.6"},
@@ -51,8 +51,11 @@ defmodule Cuerdo.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       # YAML syntax highlighting in exdoc
       {:makeup, "~> 1.0", only: :dev, runtime: false},
-      {:makeup_elixir, "~> 1.0", only: :dev, runtime: false},
-      {:makeup_syntect, "~> 0.1", only: :dev, runtime: false}
+      {:makeup_elixir, "~> 1.0", only: :dev, runtime: false}
+      # `makeup_syntect` is still using rustler_precompiled 0.8 (it's updated to 0.9 in main but not released)
+      # and it conflicts with `rock_solid > 0.0.9` which uses rustler_precompiled 0.9. It's better to not
+      # syntax highlight YAML than to keep using greenery
+      # {:makeup_syntect, "~> 0.1", only: :dev, runtime: false}
     ]
   end
 

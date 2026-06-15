@@ -19,10 +19,10 @@ defmodule Cuerdo.Arazzo.Context do
     :api_calls,
     # Resolver module for building and validating JSV schemas
     :resolver,
-    # Client module for fetching sourceDescriptions
-    :client,
     # Cached remotely fetched Arazzo files and sourceDescriptions
-    :cache
+    :cache,
+    # Client module for fetching sourceDescriptions
+    client: Cuerdo.Client
   ]
 
   @type t :: %__MODULE__{}
@@ -47,7 +47,6 @@ defmodule Cuerdo.Arazzo.Context do
            outputs: empty_outputs(document),
            api_calls: empty_api_calls(document),
            resolver: Keyword.fetch!(opts, :resolver),
-           client: Keyword.fetch!(opts, :client),
            cache: %{}
          }}
     end
@@ -85,7 +84,6 @@ defmodule Cuerdo.Arazzo.Context do
          outputs: empty_outputs(document),
          api_calls: empty_api_calls(document),
          resolver: Keyword.fetch!(opts, :resolver),
-         client: Keyword.fetch!(opts, :client),
          cache: %{}
        }}
     end
@@ -300,7 +298,6 @@ defmodule Cuerdo.Arazzo.Context do
 
   defp context_opts do
     [
-      client: [type: :atom, default: Cuerdo.Client],
       resolver: [type: :atom, default: Cuerdo.Resolver]
     ]
   end
