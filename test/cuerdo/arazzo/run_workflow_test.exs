@@ -204,6 +204,14 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
       %{document: people_document(with_self: true)}
     end
 
+    test "invalid inputs return error", %{document: document} do
+      workflow_id = "getPeople"
+      inputs = %{"wrong" => 123}
+
+      assert {:error, error} = Arazzo.run_workflow(inputs, workflow_id, document)
+      assert String.starts_with?(Exception.message(error), "executing getPeople: Invalid inputs")
+    end
+
     test "returns error when status code doesn't match condition", %{document: document} do
       workflow_id = "getPeople"
       inputs = %{"name" => "John", "min_age" => 20}

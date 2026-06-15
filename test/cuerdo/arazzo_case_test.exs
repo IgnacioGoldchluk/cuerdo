@@ -1,26 +1,40 @@
 defmodule Cuerdo.ArazzoCaseTest do
-  use Cuerdo.ArazzoCase
+  use ExUnit.Case
 
-  setup do
-    Req.Test.expect(Cuerdo.Client, fn conn ->
-      %{"min_age" => min_age, "name" => name} = conn.params
-      min_age = String.to_integer(min_age)
+  alias Cuerdo.ArazzoCase.Result
 
-      Req.Test.json(conn, [
-        %{"name" => "#{name}abc", "age" => min_age + 2},
-        %{"name" => "#{name}bcd", "age" => min_age + 20}
-      ])
-    end)
+  import Cuerdo.ArazzoFixtures
 
-    :ok
+  describe "run_all/3" do
+    test "returns result struct with failure and error cases" do
+      # 1st case pass, 2nd fails
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+        %{"min_age" => min_age, "name" => name} = conn.params
+        min_age = String.to_integer(min_age)
+
+        Req.Test.json(conn, [
+          %{"name" => "#{name}abc", "age" => min_age + 2}
+        ])
+      end)
+
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+        %{"min_age" => min_age, "name" => name} = conn.params
+        min_age = String.to_integer(min_age)
+
+        Req.Test.json(conn, [
+          # Incorrect age returned
+          %{"name" => "#{name}abc", "age" => min_age - 2}
+        ])
+      end)
+
+      document = people_document(with_self: true)
+      workflow_id = "getPeople"
+      opts = [json_schema_resolver: Cuerdo.Resolver, max_runs: 2, transform_inputs: %{}]
+
+      result = Cuerdo.ArazzoCase.run_all(workflow_id, document, opts)
+      [%Result{status: :passed}, %Result{status: :failed} = error_result] = result
+      msg = Result.format_message(error_result)
+      assert String.starts_with?(msg, "FAILED getPeople")
+    end
   end
-
-  arazzo_document_test max_runs: 1,
-                       document:
-                         Path.join(["test", "support", "people", "arazzo.yaml"])
-                         |> YamlElixir.read_from_file!()
-                         |> Map.put(
-                           "$self",
-                           Path.join(["test", "support", "people", "arazzo.yaml"])
-                         )
 end

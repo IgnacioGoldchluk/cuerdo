@@ -13,7 +13,8 @@ defmodule Cuerdo.MixProject do
       test_coverage: [
         tool: Mix.Tasks.Test.CoverageWithIndex,
         ignore_modules: [
-          Mix.Tasks.Test.CoverageWithIndex
+          Mix.Tasks.Test.CoverageWithIndex,
+          Cuerdo.ArazzoFixtures
         ]
       ],
       start_permanent: Mix.env() == :prod,
@@ -42,7 +43,7 @@ defmodule Cuerdo.MixProject do
       {:rock_solid, "~> 0.0.8"},
       {:json_path, "~> 0.4"},
       {:jsv, "~> 0.19"},
-      {:req, "~> 0.5"},
+      {:req, "~> 0.6"},
       {:stream_data, "~> 1.0"},
       {:nimble_options, "~> 1.0"},
       {:plug, "~> 1.0", only: :test},
