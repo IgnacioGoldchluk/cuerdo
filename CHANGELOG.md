@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+- breaking: Replace `max_runs` for `num_runs` and `halt_on_error` options in `arazzo_document_test`
+
 ## 0.2.2 [2026-06-14]
 - feat: Validate `workflow_inputs` argument matches `inputs` JSON schema
 - fix: Use `json_schema_resolver` when validating workflow inputs, request body schema and response body schema

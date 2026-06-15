@@ -12,7 +12,7 @@ defmodule Cuerdo.Integration.TapizTest do
   end
 
   # Doesn't work because AshJsonApi generates `"included": {"oneOf": []}`
-  # arazzo_document_test max_runs: 20,
+  # arazzo_document_test num_runs: 20,
   #                      transform_inputs: %{
   #                        "createUserWithCategoryAndYearlyLimit" =>
   #                          {Cuerdo.ArazzoFixtures, :with_unique_email}

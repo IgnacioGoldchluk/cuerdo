@@ -155,7 +155,8 @@ defmodule Cuerdo.ArazzoCase do
     - `:exclude` (`list(String.t())`) - List of `workflowId` to exclude from the document.
     If both `:only` and `:exclude` are passed then the workflows from `:only` that are not in
     `:excluded` are executed
-    - `:max_runs` (`t:pos_integer/0`) - The maximum number of cases to run. Defaults to `1`
+    - `:num_runs` (`t:pos_integer/0`) - The number of cases to run. Defaults to `1`
+    - `:halt_on_error` (`t:boolean/0`) - Whether to stop on the first failure. Defaults to `false`
     - `:transform_inputs` - A map of `%{workflowId => transformation}`, where `transformation` is
     a function that generates `t:StreamData.t/1` based on the initially generated value, specified
     as `{Module, :function_name}`, where `:function_name` is a 1-arity function
@@ -225,9 +226,11 @@ defmodule Cuerdo.ArazzoCase do
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
          %Arazzo.Workflow{} = workflow = Arazzo.Document.workflow(ctx.document, workflow_id),
          {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx) do
+      halt_on_error? = Keyword.fetch!(opts, :halt_on_error)
+
       generator(schema, workflow_id, opts)
-      |> Enum.take(opts[:max_runs])
-      |> Enum.reduce({[], ctx}, fn workflow_inputs, {results, ctx} ->
+      |> Enum.take(Keyword.fetch!(opts, :num_runs))
+      |> Enum.reduce_while({[], ctx}, fn workflow_inputs, {results, ctx} ->
         case run_workflow(workflow_inputs, workflow_id, ctx) do
           {time_ms, {:ok, updated_ctx}} ->
             result = %Result{
@@ -239,7 +242,7 @@ defmodule Cuerdo.ArazzoCase do
 
             Logger.debug(Result.format_message(result), ansi_color: :green)
 
-            {[result | results], Context.merge_cache(ctx, updated_ctx)}
+            {:cont, {[result | results], Context.merge_cache(ctx, updated_ctx)}}
 
           {time_ms, {:error, exc}} ->
             result = %Result{
@@ -252,7 +255,8 @@ defmodule Cuerdo.ArazzoCase do
 
             Logger.debug(Result.format_message(result), ansi_color: :red)
 
-            {[result | results], ctx}
+            new_acc = {[result | results], ctx}
+            if(halt_on_error?, do: {:halt, new_acc}, else: {:cont, new_acc})
         end
       end)
       |> then(&elem(&1, 0))
@@ -283,7 +287,8 @@ defmodule Cuerdo.ArazzoCase do
       prefix: [type: :string, required: false],
       only: [type: {:list, :string}, required: false],
       exclude: [type: {:list, :string}, default: []],
-      max_runs: [type: :pos_integer, default: 1],
+      num_runs: [type: :pos_integer, default: 1],
+      halt_on_error: [type: :boolean, default: false],
       transform_inputs: [type: {:map, :string, :mfa}, default: %{}],
       json_schema_resolver: [type: :any, default: DummyResolver]
     ]
