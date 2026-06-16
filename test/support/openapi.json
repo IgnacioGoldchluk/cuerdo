@@ -33,7 +33,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Book"
+                "$ref": "#/components/schemas/BookPayload"
               }
             }
           },
@@ -108,14 +108,7 @@
       "Book": {
         "properties": {
           "id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Id"
           },
           "title": {
@@ -135,12 +128,30 @@
           }
         },
         "type": "object",
-        "required": [
-          "title",
-          "author",
-          "isbn"
-        ],
+        "required": ["title", "author", "isbn"],
         "title": "Book"
+      },
+      "BookPayload": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Title"
+          },
+          "author": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Author"
+          },
+          "isbn": {
+            "type": "string",
+            "pattern": "^\\d-\\d{3}-\\d{5}-[\\dX]$",
+            "title": "Isbn"
+          }
+        },
+        "type": "object",
+        "required": ["title", "author", "isbn"],
+        "title": "BookPayload"
       },
       "HTTPValidationError": {
         "properties": {
@@ -188,11 +199,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       }
     }

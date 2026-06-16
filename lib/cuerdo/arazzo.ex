@@ -3,8 +3,6 @@ defmodule Cuerdo.Arazzo do
   Arazzo workflows runner and validation.
   """
 
-  alias Credo.CLI.Options
-
   alias Cuerdo.Arazzo.{
     Context,
     Criterion,

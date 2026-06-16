@@ -1,0 +1,71 @@
+defmodule Cuerdo.ArazzoCase.Runner do
+  @moduledoc false
+  alias Cuerdo.Arazzo
+  alias Cuerdo.Arazzo.Context
+  alias Cuerdo.ArazzoCase.Result
+
+  require Logger
+
+  def run_all(workflow_id, arazzo_document, opts) do
+    with {:ok, %Context{} = ctx} <-
+           Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
+         %Arazzo.Workflow{} = workflow = Arazzo.Document.workflow(ctx.document, workflow_id),
+         {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx) do
+      halt_on_error? = Keyword.fetch!(opts, :halt_on_error)
+      num_runs = Keyword.fetch!(opts, :num_runs)
+
+      generator(schema, workflow_id, opts)
+      |> Enum.take(num_runs)
+      |> Enum.with_index(1)
+      |> Enum.reduce_while({[], ctx}, fn {workflow_inputs, idx}, {results, ctx} ->
+        Logger.debug("#{workflow_id} #{idx}/#{num_runs}")
+
+        case run_workflow(workflow_inputs, workflow_id, ctx) do
+          {time_ms, {:ok, updated_ctx}} ->
+            result = %Result{
+              workflow_id: workflow_id,
+              inputs: workflow_inputs,
+              execution_time_ms: time_ms,
+              status: :passed
+            }
+
+            Logger.debug(Result.format_message(result), ansi_color: :green)
+            {:cont, {[result | results], Context.merge_cache(ctx, updated_ctx)}}
+
+          {time_ms, {:error, exc}} ->
+            result = %Result{
+              workflow_id: workflow_id,
+              inputs: workflow_inputs,
+              execution_time_ms: time_ms,
+              status: :failed,
+              reason: exc
+            }
+
+            Logger.debug(Result.format_message(result), ansi_color: :red)
+
+            new_acc = {[result | results], ctx}
+            if(halt_on_error?, do: {:halt, new_acc}, else: {:cont, new_acc})
+        end
+      end)
+      |> then(&elem(&1, 0))
+      |> Enum.reverse()
+    else
+      {:error, exc} when is_exception(exc) ->
+        [%Result{workflow_id: workflow_id, status: :error, reason: exc}]
+    end
+  end
+
+  # Runs timed workflow
+  defp run_workflow(workflow_inputs, workflow_id, ctx) do
+    :timer.tc(fn -> Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) end, :millisecond)
+  end
+
+  defp generator(schema, workflow_id, opts) do
+    base = RockSolid.from_schema(schema, resolver: opts[:json_schema_resolver])
+
+    case Map.get(opts[:transform_inputs], workflow_id) do
+      nil -> base
+      {mod, func, args} -> StreamData.bind(base, fn val -> apply(mod, func, [val] ++ args) end)
+    end
+  end
+end

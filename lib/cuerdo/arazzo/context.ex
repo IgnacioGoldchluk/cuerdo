@@ -116,8 +116,10 @@ defmodule Cuerdo.Arazzo.Context do
   end
 
   @doc false
-  def merge_cache(%__MODULE__{} = to, %__MODULE__{cache: cache2} = _from) do
-    Map.update!(to, :cache, fn cache -> Map.merge(cache, cache2) end)
+  def merge_cache(%__MODULE__{} = to, %__MODULE__{cache: _cache2} = _from) do
+    # Debug later why this hangs the pipeline
+    to
+    # Map.update!(to, :cache, fn cache -> Map.merge(cache, cache2) end)
   end
 
   defp resolve_source_description(%__MODULE__{cache: cache} = context, %{url: url})

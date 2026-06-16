@@ -2,6 +2,7 @@ defmodule Cuerdo.ArazzoCaseTest do
   use ExUnit.Case
 
   alias Cuerdo.ArazzoCase.Result
+  alias Cuerdo.ArazzoCase.Runner
 
   import Cuerdo.ArazzoFixtures
 
@@ -26,7 +27,7 @@ defmodule Cuerdo.ArazzoCaseTest do
         halt_on_error: false
       ]
 
-      result = Cuerdo.ArazzoCase.run_all(workflow_id, document, opts)
+      result = Runner.run_all(workflow_id, document, opts)
       assert [%Result{status: :failed}, %Result{status: :failed}] = result
     end
 
@@ -61,7 +62,7 @@ defmodule Cuerdo.ArazzoCaseTest do
         halt_on_error: true
       ]
 
-      result = Cuerdo.ArazzoCase.run_all(workflow_id, document, opts)
+      result = Runner.run_all(workflow_id, document, opts)
       [%Result{status: :passed}, %Result{status: :failed} = error_result] = result
       msg = Result.format_message(error_result)
       assert String.starts_with?(msg, "FAILED getPeople")

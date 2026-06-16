@@ -21,6 +21,7 @@ defmodule Cuerdo.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
+      escript: escript(),
       docs: docs()
     ]
   end
@@ -71,7 +72,8 @@ defmodule Cuerdo.MixProject do
           Cuerdo.Arazzo,
           Cuerdo.ArazzoCase,
           Cuerdo.Arazzo.Context,
-          Cuerdo.Errors.ExecutionError
+          Cuerdo.Errors.ExecutionError,
+          Cuerdo.CLI
         ]
       end
     ]
@@ -87,6 +89,7 @@ defmodule Cuerdo.MixProject do
     [
       Arazzo: [Cuerdo.Arazzo, Cuerdo.Arazzo.Context],
       ArazzoCase: [Cuerdo.ArazzoCase],
+      CLI: [Cuerdo.CLI],
       Exceptions: [Cuerdo.Errors.ExecutionError]
     ]
   end
@@ -102,5 +105,9 @@ defmodule Cuerdo.MixProject do
       source_ref: "v#{@version}",
       links: %{"GitHub" => @source_url}
     ]
+  end
+
+  def escript do
+    [main_module: Cuerdo.CLI]
   end
 end

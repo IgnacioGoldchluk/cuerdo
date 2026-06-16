@@ -22,4 +22,16 @@ defmodule Cuerdo.ArazzoCase.Result do
     inputs: #{inspect(result.inputs)}
     """
   end
+
+  defimpl JSON.Encoder, for: Cuerdo.ArazzoCase.Result do
+    def encode(%Cuerdo.ArazzoCase.Result{} = result, encoder) do
+      result
+      |> Map.from_struct()
+      |> Map.update!(:reason, fn
+        nil -> nil
+        exc when is_exception(exc) -> Exception.message(exc)
+      end)
+      |> JSON.Encoder.encode(encoder)
+    end
+  end
 end

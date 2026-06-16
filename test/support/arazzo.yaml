@@ -18,7 +18,7 @@ workflows:
           additionalProperties: false
           properties:
               book:
-                  "$ref": "{$sourceDescriptions.bookStore.url}#/components/schemas/Book"
+                  "$ref": "{$sourceDescriptions.bookStore.url}#/components/schemas/BookPayload"
       outputs:
           bookId: $steps.createBookStep.outputs.bookId
       steps:
@@ -39,7 +39,7 @@ workflows:
             operationId: getBook
             description: Gets the created book by its id
             parameters:
-                - name: bookId
+                - name: book_id
                   in: path
                   value: $steps.createBookStep.outputs.bookId
             successCriteria:
@@ -47,13 +47,15 @@ workflows:
                 - condition: $response.body#/isbn == $steps.createBookStep.outputs.bookIsbn
                 - condition: $response.body#/author == $steps.createBookStep.outputs.bookAuthor
                 - condition: $response.body#/title == $steps.createBookStep.outputs.bookTitle
-                - condition: $response.body#/bookId == $steps.createBookStep.outputs.bookId
+                - condition: $response.body#/id == $steps.createBookStep.outputs.bookId
           - stepId: listBooksStep
             operationId: listBooks
             description: The created book is contained in the books list
             successCriteria:
                 - condition: $statusCode == 200
-                - condition: count($response.body#[?@.id == $steps.createBookStep.outputs.bookId]) == 1
+                - context: $response.body
+                  type: jsonpath
+                  condition: $[?@.id == $steps.createBookStep.outputs.bookId]
 components:
     failureActions:
         refreshToken:
