@@ -56,18 +56,18 @@ defmodule Cuerdo.Arazzo.Context do
   def from_document(arazzo_document, opts) do
     case new(arazzo_document, opts) do
       {:ok, context} -> {:ok, context}
-      {:error, errors} -> {:error, %InvalidDocument{errors: errors}}
+      {:error, exc} = error when is_exception(exc) -> error
     end
   end
 
   @doc """
   Same as `new/2` but raises on error
   """
-  @spec new!(map(), module()) :: t()
+  @spec new!(map(), Keyword.t()) :: t()
   def new!(document_data, opts \\ []) when is_map(document_data) do
     case new(document_data, opts) do
       {:ok, %__MODULE__{} = ctx} -> ctx
-      {:error, errors} when is_list(errors) -> raise InvalidDocument, errors: errors
+      {:error, exc} when is_exception(exc) -> raise exc
     end
   end
 
@@ -87,6 +87,9 @@ defmodule Cuerdo.Arazzo.Context do
          resolver: Keyword.fetch!(opts, :resolver),
          cache: %{}
        }}
+    else
+      {:error, errors} when is_list(errors) -> {:error, %InvalidDocument{errors: errors}}
+      {:error, exc} when is_exception(exc) -> {:error, exc}
     end
   end
 

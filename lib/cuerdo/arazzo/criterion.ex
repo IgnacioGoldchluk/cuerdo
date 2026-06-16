@@ -2,6 +2,7 @@ defmodule Cuerdo.Arazzo.Criterion do
   @moduledoc """
   An Arazzo [Criterion Object](https://spec.openapis.org/arazzo/v1.0.1.html#criterion-object)
   """
+  alias Cuerdo.Arazzo.Context
   alias Cuerdo.Arazzo.Criterion.Simple
   alias Cuerdo.Arazzo.RuntimeExpression
   alias Cuerdo.Errors.{FailedCriterion, InvalidExpression}

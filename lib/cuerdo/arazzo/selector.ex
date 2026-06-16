@@ -11,6 +11,8 @@ defmodule Cuerdo.Arazzo.Selector do
       type: Zoi.string() |> Zoi.one_of(["jsonpath", "jsonpointer"])
     }
 
+  @type t :: %__MODULE__{}
+
   @doc """
   Resolves a selector
   """

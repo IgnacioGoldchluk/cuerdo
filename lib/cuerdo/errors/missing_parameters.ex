@@ -1,6 +1,8 @@
 defmodule Cuerdo.Errors.MissingParameters do
   defexception [:parameters]
 
+  @type t :: %__MODULE__{parameters: [{String.t(), String.t()}]}
+
   @impl true
   def message(%{parameters: parameters}) do
     "Missing required parameters: #{Enum.map_join(parameters, ",", &format_param/1)}"
