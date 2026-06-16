@@ -52,7 +52,7 @@ defmodule Cuerdo.OpenAPI.Operation do
   Returns the operation corresponding to the given step, or an error if the operation
   was not found
   """
-  @spec fetch(Step.t(), Context.t()) :: {:ok, t()} | {:error, Exception.t()}
+  @spec fetch(Step.t(), Context.t()) :: {:ok, t(), Context.t()} | {:error, Exception.t()}
   def fetch(%Step{} = step, %Context{} = ctx) do
     # Easier to delegate both to OpenAPI module for now
     case step do

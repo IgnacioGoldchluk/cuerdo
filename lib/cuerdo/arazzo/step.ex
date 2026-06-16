@@ -45,6 +45,8 @@ defmodule Cuerdo.Arazzo.Step do
       outputs: Output.schema() |> Zoi.default(%{})
     }
 
+  @type t :: %__MODULE__{}
+
   @impl Cuerdo.Object
   def validations do
     [:single_reference, :success_criteria, :no_workflow_outputs]
