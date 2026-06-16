@@ -3,6 +3,8 @@ defmodule Cuerdo.Arazzo do
   Arazzo workflows runner and validation.
   """
 
+  alias Credo.CLI.Options
+
   alias Cuerdo.Arazzo.{
     Context,
     Criterion,
@@ -20,19 +22,33 @@ defmodule Cuerdo.Arazzo do
 
   alias Cuerdo.OpenAPI
 
+  @spec run_workflow(any(), String.t(), map() | Context.t()) ::
+          {:ok, Context.t()} | {:error, ExecutionError.t()}
+  def run_workflow(workflow_inputs, workflow_id, %Context{} = context) do
+    do_run_workflow(workflow_inputs, workflow_id, context, [workflow_id])
+  end
+
   @doc """
   Runs the workflowId with the given inputs from the Arazzo document.
 
   Returns `{:ok, context}` on success with each step requests and responses,
   or an `{:error, reason}`.
+
+  ## Options
+
+  - `:resolver` - The JSON Schema resolver to use for validating workflow inputs and request/response schemas.
+  See [JSV Resolvers](`e:jsv:resolvers.html`)
   """
-  @spec run_workflow(any(), Sting.t(), map() | Context.t()) ::
-          {:ok, Context.t()} | {:error, ExecutionError.t()}
-  def run_workflow(workflow_inputs, workflow_id, document_or_context) do
-    run_workflow(workflow_inputs, workflow_id, document_or_context, [workflow_id])
+  @spec run_workflow(any(), String.t(), map(), Keyword.t()) ::
+          {:ok, Context.t()} | {:error, Exception.t()}
+  def run_workflow(workflow_inputs, workflow_id, document, opts \\ []) when is_map(document) do
+    case Context.from_document(document, opts) do
+      {:ok, %Context{} = ctx} -> run_workflow(workflow_inputs, workflow_id, ctx)
+      {:error, exc} when is_exception(exc) -> {:error, ExecutionError.wrap(exc, [workflow_id])}
+    end
   end
 
-  defp run_workflow(workflow_inputs, workflow_id, document_or_context, execution_path) do
+  defp do_run_workflow(workflow_inputs, workflow_id, document_or_context, execution_path) do
     with {:ok, %Context{} = ctx} <- Context.from_document(document_or_context),
          {:ok, idx} <- Document.fetch_workflow_index(ctx.document, workflow_id),
          ctx = Context.put_inputs(ctx, workflow_id, workflow_inputs),
@@ -125,11 +141,12 @@ defmodule Cuerdo.Arazzo do
            {:name, String.split(workflow_id, ".")},
          {:ok, arazzo_document, updated_ctx} <-
            Context.fetch_source_description(ctx, source_description_name),
+         {:ok, workflow_ctx} <- Context.from_base(updated_ctx, arazzo_document),
          {:ok, remote_workflow_ctx} <-
-           run_workflow(
+           do_run_workflow(
              workflow_inputs,
              remote_workflow_id,
-             arazzo_document,
+             workflow_ctx,
              execution_path ++ [remote_workflow_id]
            ) do
       new_ctx =
@@ -158,9 +175,11 @@ defmodule Cuerdo.Arazzo do
     original_workflow_id =
       ctx.document.workflows |> Enum.fetch!(workflow_idx) |> Map.fetch!(:workflowId)
 
+    # We can safely use the same context because we only need the workflow outputs, and the workflow
+    # that is going to run overrides everything anyway, there is no need to create a new one.
     with {:ok, workflow_inputs} <- to_workflow_inputs(step.parameters, rev_path, ctx),
          {:ok, %Context{} = workflow_ctx} <-
-           run_workflow(workflow_inputs, workflow_id, ctx, execution_path ++ [workflow_id]) do
+           do_run_workflow(workflow_inputs, workflow_id, ctx, execution_path ++ [workflow_id]) do
       new_ctx =
         workflow_ctx
         |> Context.workflow_outputs(workflow_id)

@@ -29,7 +29,8 @@ defmodule Cuerdo.Arazzo.Context do
 
   # Creates a new context from an unparsed document or context
   @doc false
-  @spec from_document(t() | Document.t(), Keyword.t()) :: {:ok, t()} | {:error, Exception.t()}
+  @spec from_document(t() | Document.t() | map(), Keyword.t()) ::
+          {:ok, t()} | {:error, Exception.t()}
   def from_document(document_or_context, opts \\ [])
 
   def from_document(%__MODULE__{} = context, _opts), do: {:ok, context}
@@ -300,5 +301,18 @@ defmodule Cuerdo.Arazzo.Context do
     [
       resolver: [type: :atom, default: Cuerdo.Resolver]
     ]
+  end
+
+  @doc """
+  Creates a new Context, using an existing context as base
+  """
+  @spec from_base(t(), map()) :: {:ok, t()} | {:error, Exception.t()}
+  def from_base(%__MODULE__{} = ctx, document) do
+    opts = [resolver: ctx.resolver]
+
+    case from_document(document, opts) do
+      {:ok, %__MODULE__{} = new_ctx} -> {:ok, merge_cache(new_ctx, ctx)}
+      {:error, exc} = error when is_exception(exc) -> error
+    end
   end
 end
