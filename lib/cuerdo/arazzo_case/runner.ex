@@ -6,6 +6,30 @@ defmodule Cuerdo.ArazzoCase.Runner do
 
   require Logger
 
+  @doc """
+  Returns the workflow ids to execute.
+
+  If the final list contains a workfow that does not exist then returns an argument error
+  """
+  @spec workflow_ids(Arazzo.Document.t(), [String.t()] | nil, [String.t()] | nil) ::
+          {:ok, [String.t()]} | {:error, Exception.t()}
+  def workflow_ids(%Arazzo.Document{} = document, to_keep, to_exclude) do
+    all_ids = Enum.map(document.workflows, & &1.workflowId)
+
+    workflow_ids =
+      case {to_keep, to_exclude} do
+        {nil, nil} -> all_ids
+        {nil, to_exclude} -> Enum.reject(all_ids, &(&1 in to_exclude))
+        {to_keep, nil} -> to_keep
+        {to_keep, to_exclude} -> for id <- to_keep, id not in to_exclude, do: id
+      end
+
+    case Enum.filter(workflow_ids, &(not Enum.member?(all_ids, &1))) do
+      [] -> {:ok, workflow_ids}
+      ids -> {:error, %ArgumentError{message: "invalid workflow ids: #{Enum.join(ids, ", ")}"}}
+    end
+  end
+
   def run_all(workflow_id, arazzo_document, opts) do
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
