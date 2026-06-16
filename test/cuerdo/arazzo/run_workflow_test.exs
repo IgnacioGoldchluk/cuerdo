@@ -150,6 +150,50 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
                Arazzo.run_workflow(workflow_input, workflow_id, document)
     end
 
+    test "returns error when sourceDescription in operationPath is invalid", %{document: document} do
+      # pattern is: '{$sourceDescriptions.tapiz.url}#/paths/~1api~1json~1categories~1{id}/get'
+      workflow_id = "createAndRetrieveItem"
+      item = %{"name" => "Shoes", "price" => 12_345}
+      workflow_input = %{"item" => item}
+      %{"workflows" => [%{"steps" => [step | _]}]} = document
+
+      invalid_path = "'{$sourceDescriptions.invalidName.url}#/paths/~1invalid~1path"
+
+      document =
+        RockSolid.Traversal.put_in_schema!(
+          document,
+          ["workflows", "0", "steps", "0"],
+          step |> Map.delete("operationId") |> Map.put("operationPath", invalid_path)
+        )
+
+      assert {:error,
+              %Cuerdo.Errors.ExecutionError{
+                error: %Cuerdo.Errors.InvalidSourceDescription{name: "invalidName"}
+              }} =
+               Arazzo.run_workflow(workflow_input, workflow_id, document)
+    end
+
+    test "returns error for invalid operationPath", %{document: document} do
+      workflow_id = "createAndRetrieveItem"
+      item = %{"name" => "Shoes", "price" => 12_345}
+      workflow_input = %{"item" => item}
+
+      %{"workflows" => [%{"steps" => [step | _]}]} = document
+
+      document =
+        RockSolid.Traversal.put_in_schema!(
+          document,
+          ["workflows", "0", "steps", "0"],
+          step |> Map.delete("operationId") |> Map.put("operationPath", "/path/~invalid")
+        )
+
+      assert {:error,
+              %Cuerdo.Errors.ExecutionError{
+                error: %Cuerdo.Errors.InvalidOperation{value: "/path/~invalid"}
+              }} =
+               Arazzo.run_workflow(workflow_input, workflow_id, document)
+    end
+
     test "returns error for invalid input reference", %{document: document} do
       workflow_id = "createAndRetrieveItem"
       item = %{"name" => "Shoes", "price" => 12_345}

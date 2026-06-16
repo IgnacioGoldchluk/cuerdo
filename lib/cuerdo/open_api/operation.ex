@@ -92,7 +92,7 @@ defmodule Cuerdo.OpenAPI.Operation do
     with {:ok, source_description_value, updated_ctx} <-
            Context.fetch_source_description(ctx, source_description_name),
          # Beginning is guaranteed to not contain any '#'
-         [json_pointer] = Regex.run(~r/^[^#]*(#.*)$/, operation_path, capture: :all_but_first),
+         [json_pointer] <- Regex.run(~r/^[^#]*(#.*)$/, operation_path, capture: :all_but_first),
          {:ok, operation} <-
            OpenAPI.fetch_operation_by_path(
              json_pointer,
