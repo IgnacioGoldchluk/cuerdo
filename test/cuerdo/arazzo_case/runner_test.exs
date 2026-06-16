@@ -1,6 +1,7 @@
 defmodule Cuerdo.ArazzoCase.RunnerTest do
   use ExUnit.Case
 
+  alias Cuerdo.Arazzo.Document
   alias Cuerdo.ArazzoCase.Runner
 
   setup_all do
@@ -8,7 +9,7 @@ defmodule Cuerdo.ArazzoCase.RunnerTest do
       ["tapiz", "arazzo.yml"]
       |> Path.join()
       |> YamlElixir.read_from_file!()
-      |> Cuerdo.Arazzo.Document.new!()
+      |> Document.new!()
 
     %{document: document, ids: Enum.map(document.workflows, & &1.workflowId)}
   end
@@ -40,8 +41,9 @@ defmodule Cuerdo.ArazzoCase.RunnerTest do
     end
 
     test "returns error when an id is not in the document", %{document: document} do
+      assert {:error, %ArgumentError{message: msg}} =
+               Runner.workflow_ids(document, ["invalid_id"], nil)
 
-      assert {:error, %ArgumentError{message: msg}} = Runner.workflow_ids(document, ["invalid_id"], nil)
       assert msg == "invalid workflow ids: invalid_id"
     end
   end
