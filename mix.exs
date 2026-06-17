@@ -27,11 +27,7 @@ defmodule Cuerdo.MixProject do
     ]
   end
 
-  def application(:test) do
-    [extra_applications: [:logger]]
-  end
-
-  def application(_) do
+  def application do
     [
       extra_applications: [:logger],
       mod: {Cuerdo.CLI, []}
