@@ -15,38 +15,42 @@ defmodule Cuerdo.CLI do
 
   For more information on the options, refer to `Cuerdo.ArazzoCase`
   """
+  use Application
 
   require Logger
 
   alias Cuerdo.Arazzo
   alias Cuerdo.ArazzoCase
-  alias RockSolid.Resolution
 
   alias Cuerdo.CLI
+
+  @impl true
+  def start(_, _) do
+    Logger.info("Running Cuerdo Arazzo runner")
+    main(Burrito.Util.Args.argv())
+  end
 
   def main(args) do
     case run(args) do
       {:error, _} ->
-        System.stop(1)
+        System.halt(1)
 
       {:ok, results} when is_list(results) ->
         status =
           if(Enum.reject(results, &(&1.status == :passed)) |> Enum.empty?(), do: 0, else: 1)
 
-        System.stop(status)
+        System.halt(status)
     end
   end
 
   def run(args) do
     with {:ok, valid_args} <- CLI.Args.parse(args),
          {:ok, document} <- YamlElixir.read_from_file(valid_args[:document]),
-         # Clear cache before running the CLI, otherwise any updates to OpenAPI schemas
-         # are not reflected
-         _ = Resolution.Cache.clear(),
          {:ok, parsed_doc} <- Arazzo.Document.new(document),
          {:ok, workflow_ids} <-
            ArazzoCase.Runner.workflow_ids(parsed_doc, valid_args[:only], valid_args[:exclude]) do
       opts = Keyword.put(valid_args, :document, document)
+      Logger.info("Executing workflows: #{Enum.join(workflow_ids, ", ")}")
       results = Enum.flat_map(workflow_ids, &ArazzoCase.Runner.run_all(&1, document, opts))
 
       ArazzoCase.Report.write(Keyword.fetch!(opts, :report_output), results, opts[:report_file])

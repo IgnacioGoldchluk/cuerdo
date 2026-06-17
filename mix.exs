@@ -22,14 +22,19 @@ defmodule Cuerdo.MixProject do
       description: description(),
       package: package(),
       escript: escript(),
-      docs: docs()
+      docs: docs(),
+      releases: releases()
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
-  def application do
+  def application(:test) do
+    [extra_applications: [:logger]]
+  end
+
+  def application(_) do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Cuerdo.CLI, []}
     ]
   end
 
@@ -47,6 +52,7 @@ defmodule Cuerdo.MixProject do
       {:req, "~> 0.6"},
       {:stream_data, "~> 1.0"},
       {:nimble_options, "~> 1.0"},
+      {:burrito, "~> 1.0"},
       {:plug, "~> 1.0", only: :test},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -109,5 +115,22 @@ defmodule Cuerdo.MixProject do
 
   def escript do
     [main_module: Cuerdo.CLI]
+  end
+
+  def releases do
+    [
+      cuerdo: [
+        steps: [:assemble, &Burrito.wrap/1],
+        burrito: [
+          targets: [
+            # Linux right now for debugging, no need to compile everything
+            # macos: [os: :darwin, cpu: :x86_64],
+            # macos_silicon: [os: :darwin, cpu: :aarch64],
+            linux: [os: :linux, cpu: :x86_64]
+            # windows: [os: :windows, cpu: :x86_64]
+          ]
+        ]
+      ]
+    ]
   end
 end

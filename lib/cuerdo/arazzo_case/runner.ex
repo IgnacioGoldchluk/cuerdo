@@ -34,11 +34,12 @@ defmodule Cuerdo.ArazzoCase.Runner do
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
          %Arazzo.Workflow{} = workflow = Arazzo.Document.workflow(ctx.document, workflow_id),
-         {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx) do
+         {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx),
+         {:ok, generator} <- generator(schema, workflow_id, opts) do
       halt_on_error? = Keyword.fetch!(opts, :halt_on_error)
       num_runs = Keyword.fetch!(opts, :num_runs)
 
-      generator(schema, workflow_id, opts)
+      generator
       |> Enum.take(num_runs)
       |> Enum.with_index(1)
       |> Enum.reduce_while({[], ctx}, fn {workflow_inputs, idx}, {results, ctx} ->
@@ -75,7 +76,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
       |> Enum.reverse()
     else
       {:error, exc} when is_exception(exc) ->
-        [%Result{workflow_id: workflow_id, status: :error, reason: exc}]
+        [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
     end
   end
 
@@ -91,5 +92,8 @@ defmodule Cuerdo.ArazzoCase.Runner do
       nil -> base
       {mod, func, args} -> StreamData.bind(base, fn val -> apply(mod, func, [val] ++ args) end)
     end
+    |> then(&{:ok, &1})
+  rescue
+    exc -> {:error, exc}
   end
 end

@@ -2,7 +2,7 @@ defmodule Cuerdo.ArazzoCase.Result do
   @moduledoc false
 
   @type status :: :passed | :failed | :error
-  defstruct [:workflow_id, :inputs, :execution_time_ms, :reason, :status]
+  defstruct [:workflow_id, :inputs, :reason, :status, execution_time_ms: 0]
 
   def format_message(%__MODULE__{status: :error, reason: reason} = result) do
     "ERROR #{result.workflow_id}: #{Exception.message(reason)}"

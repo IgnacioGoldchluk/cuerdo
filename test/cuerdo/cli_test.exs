@@ -5,7 +5,21 @@ defmodule Cuerdo.CLITest do
 
   import Cuerdo.ArazzoFixtures
 
+  import ExUnit.CaptureIO
+
   describe "run/1" do
+    test "returns single error result on failue" do
+      args = ["--document", Path.join(["test", "support", "arazzo.yaml"]), "--num-runs", "1"]
+
+      Req.Test.expect(Cuerdo.Resolver, &Req.Test.transport_error(&1, :econnrefused))
+
+      # Silence stdout summary
+      capture_io(fn ->
+        assert {:ok, [result]} = CLI.run(args)
+        assert result.status == :error
+      end)
+    end
+
     test "returns list of results on successful execution" do
       args = ["--document", Path.join(["test", "support", "arazzo.yaml"]), "--num-runs", "1"]
 
@@ -56,9 +70,11 @@ defmodule Cuerdo.CLITest do
         Req.Test.json(conn, [book])
       end)
 
-      {:ok, [result]} = CLI.run(args)
-      assert result.status == :passed
-      assert result.inputs["book"] == Agent.get(agent, fn book -> Map.delete(book, "id") end)
+      capture_io(fn ->
+        {:ok, [result]} = CLI.run(args)
+        assert result.status == :passed
+        assert result.inputs["book"] == Agent.get(agent, fn book -> Map.delete(book, "id") end)
+      end)
     end
   end
 end
