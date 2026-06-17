@@ -2,6 +2,7 @@ defmodule Cuerdo.Arazzo.Context do
   @moduledoc """
   Internal Arazzo Context. Stores workflows and steps inputs/outputs, request/response, etc.
   """
+  alias Cuerdo.Arazzo.Context.Cache
   alias Cuerdo.Arazzo.{Document, SourceDescription, Workflow}
   alias Cuerdo.Errors.{InvalidDocument, InvalidSourceDescription}
 
@@ -19,7 +20,8 @@ defmodule Cuerdo.Arazzo.Context do
     :api_calls,
     # Resolver module for building and validating JSV schemas
     :resolver,
-    # Cached remotely fetched Arazzo files and sourceDescriptions
+    # Cached remotely fetched Arazzo files and sourceDescriptions. Either a ref to an ets
+    # table if cache was enabled for the Context (or inherited), or `nil` if cache was disabled
     :cache,
     # Client module for fetching sourceDescriptions
     client: Cuerdo.Client
@@ -48,7 +50,7 @@ defmodule Cuerdo.Arazzo.Context do
            outputs: empty_outputs(document),
            api_calls: empty_api_calls(document),
            resolver: Keyword.fetch!(opts, :resolver),
-           cache: %{}
+           cache: create_cache(Keyword.fetch!(opts, :init_cache?))
          }}
     end
   end
@@ -74,6 +76,7 @@ defmodule Cuerdo.Arazzo.Context do
   @doc """
   Creates a new context
   """
+  # Not used in prod but we'll keep it just in case
   @spec new(map(), Keyword.t()) :: {:ok, t()} | {:error, Exception.t()}
   def new(document_data, opts \\ []) when is_map(document_data) do
     with {:ok, opts} <- NimbleOptions.validate(opts, context_opts()),
@@ -85,7 +88,7 @@ defmodule Cuerdo.Arazzo.Context do
          outputs: empty_outputs(document),
          api_calls: empty_api_calls(document),
          resolver: Keyword.fetch!(opts, :resolver),
-         cache: %{}
+         cache: create_cache(Keyword.get(opts, :init_cache?, false))
        }}
     else
       {:error, errors} when is_list(errors) -> {:error, %InvalidDocument{errors: errors}}
@@ -116,10 +119,8 @@ defmodule Cuerdo.Arazzo.Context do
   end
 
   @doc false
-  def merge_cache(%__MODULE__{} = to, %__MODULE__{cache: _cache2} = _from) do
-    # Debug later why this hangs the pipeline
-    to
-    # Map.update!(to, :cache, fn cache -> Map.merge(cache, cache2) end)
+  def transfer_cache(%__MODULE__{} = to, %__MODULE__{cache: cache} = _from) do
+    Map.put(to, :cache, cache)
   end
 
   defp resolve_source_description(%__MODULE__{cache: cache} = context, %{url: url})
@@ -168,10 +169,14 @@ defmodule Cuerdo.Arazzo.Context do
     )
   end
 
-  defp maybe_store_in_cache(%__MODULE__{} = context, url, schema) do
+  defp maybe_store_in_cache(%__MODULE__{cache: nil} = context, _url, _schema), do: context
+
+  defp maybe_store_in_cache(%__MODULE__{cache: ets_ref} = context, url, schema)
+       when is_reference(ets_ref) do
     case URI.parse(url) do
       %URI{scheme: scheme} when scheme in ["http", "https"] ->
-        Map.update!(context, :cache, fn cache -> Map.put(cache, url, schema) end)
+        Cache.store(ets_ref, url, schema)
+        context
 
       _ ->
         context
@@ -304,7 +309,8 @@ defmodule Cuerdo.Arazzo.Context do
 
   defp context_opts do
     [
-      resolver: [type: :atom, default: Cuerdo.Resolver]
+      resolver: [type: :atom, default: Cuerdo.Resolver],
+      init_cache?: [type: :boolean, default: false]
     ]
   end
 
@@ -316,8 +322,11 @@ defmodule Cuerdo.Arazzo.Context do
     opts = [resolver: ctx.resolver]
 
     case from_document(document, opts) do
-      {:ok, %__MODULE__{} = new_ctx} -> {:ok, merge_cache(new_ctx, ctx)}
+      {:ok, %__MODULE__{} = new_ctx} -> {:ok, transfer_cache(new_ctx, ctx)}
       {:error, exc} = error when is_exception(exc) -> error
     end
   end
+
+  defp create_cache(false), do: nil
+  defp create_cache(true), do: Cache.create()
 end

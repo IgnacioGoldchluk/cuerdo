@@ -54,7 +54,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
             }
 
             Logger.debug(Result.format_message(result), ansi_color: :green)
-            {:cont, {[result | results], Context.merge_cache(ctx, updated_ctx)}}
+            {:cont, {[result | results], Context.transfer_cache(ctx, updated_ctx)}}
 
           {time_ms, {:error, exc}} ->
             result = %Result{

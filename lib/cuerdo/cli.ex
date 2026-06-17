@@ -25,6 +25,19 @@ defmodule Cuerdo.CLI do
   alias Cuerdo.CLI
 
   def main(args) do
+    case run(args) do
+      {:error, _} ->
+        System.stop(1)
+
+      {:ok, results} when is_list(results) ->
+        status =
+          if(Enum.reject(results, &(&1.status == :passed)) |> Enum.empty?(), do: 0, else: 1)
+
+        System.stop(status)
+    end
+  end
+
+  def run(args) do
     with {:ok, valid_args} <- CLI.Args.parse(args),
          {:ok, document} <- YamlElixir.read_from_file(valid_args[:document]),
          # Clear cache before running the CLI, otherwise any updates to OpenAPI schemas
@@ -38,14 +51,11 @@ defmodule Cuerdo.CLI do
 
       ArazzoCase.Report.write(Keyword.fetch!(opts, :report_output), results, opts[:report_file])
 
-      case results do
-        [] -> System.stop(0)
-        _ -> System.stop(1)
-      end
+      {:ok, results}
     else
-      {:error, exc} when is_exception(exc) ->
+      {:error, exc} = error when is_exception(exc) ->
         Logger.error("Error processing arguments/document: #{Exception.message(exc)}")
-        System.stop(1)
+        error
     end
   end
 end

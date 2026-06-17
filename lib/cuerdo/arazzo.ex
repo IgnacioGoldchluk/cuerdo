@@ -153,7 +153,7 @@ defmodule Cuerdo.Arazzo do
         |> Enum.reduce(updated_ctx, fn {key, value}, ctx ->
           Context.put_step_output(ctx, original_workflow_id, step.stepId, key, value)
         end)
-        |> Context.merge_cache(remote_workflow_ctx)
+        |> Context.transfer_cache(remote_workflow_ctx)
 
       {:ok, new_ctx}
     else
@@ -184,7 +184,7 @@ defmodule Cuerdo.Arazzo do
         |> Enum.reduce(ctx, fn {key, value}, ctx ->
           Context.put_step_output(ctx, original_workflow_id, step.stepId, key, value)
         end)
-        |> Context.merge_cache(workflow_ctx)
+        |> Context.transfer_cache(workflow_ctx)
 
       {:ok, new_ctx}
     else
