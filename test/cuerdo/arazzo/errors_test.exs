@@ -242,18 +242,22 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
     end
 
     test "formats error message for InvalidExpression" do
-      assert_raise Errors.InvalidExpression, "invalid expression: $requestbody", fn ->
-        raise Errors.InvalidExpression, expression: "$requestbody"
+      msg = "invalid expression: $requestbody - does not match any valid expression"
+
+      assert_raise Errors.InvalidExpression, msg, fn ->
+        raise Errors.InvalidExpression,
+          expression: "$requestbody",
+          message: "does not match any valid expression"
       end
 
-      assert_raise Errors.InvalidExpression, "invalid expression: foo/bar", fn ->
-        raise Errors.InvalidExpression, expression: {"foo", "bar"}
+      assert_raise Errors.InvalidExpression, "invalid expression: foo/bar - incomplete", fn ->
+        raise Errors.InvalidExpression, expression: {"foo", "bar"}, message: "incomplete"
       end
 
       expression = %{"type" => "jsonpath", "context" => "$request.body", "selector" => "$.foo"}
 
       assert_raise Errors.InvalidExpression, ~r/invalid expression/, fn ->
-        raise Errors.InvalidExpression, expression: expression
+        raise Errors.InvalidExpression, expression: expression, message: "invalid selector"
       end
     end
 

@@ -18,15 +18,17 @@ defmodule Cuerdo.Arazzo.ReusableObject do
         %__MODULE__{reference: "$components.parameters." <> name = ref} = obj,
         %Context{} = ctx
       ) do
-    case Map.fetch(ctx.document.components.parameters, name) do
-      :error ->
-        {:error, %InvalidExpression{expression: ref}}
+    case ctx.document do
+      %{components: %{parameters: params}} when is_map_key(params, name) ->
+        parameter = Map.fetch!(params, name)
 
-      {:ok, parameter} ->
         if(is_nil(obj.value),
           do: {:ok, parameter},
           else: {:ok, Map.put(parameter, :value, obj.value)}
         )
+
+      _ ->
+        {:error, %InvalidExpression{expression: ref, message: "not in document parameters"}}
     end
   end
 end

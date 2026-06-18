@@ -18,21 +18,46 @@ defmodule Cuerdo.Arazzo.Selector do
   """
   @spec resolve(String.t(), String.t(), String.t()) ::
           {:ok, any()} | {:error, InvalidSelector.t()}
-  def resolve(value, type, selector) do
-    {:ok, do_resolve(value, type, selector)}
-  rescue
-    # TODO: Fix this
-    _ -> {:error, %InvalidSelector{context: value, type: type, selector: selector}}
+  def resolve(value, type, selector)
+
+  def resolve(value, "jsonpointer" = type, selector) do
+    case RockSolid.Traversal.fetch_in_schema(value, RockSolid.Traversal.to_path(selector)) do
+      {:ok, value} ->
+        {:ok, value}
+
+      {:error, exc} ->
+        {:error,
+         %InvalidSelector{
+           context: value,
+           type: type,
+           selector: selector,
+           message: Exception.message(exc)
+         }}
+    end
   end
 
-  defp do_resolve(value, "jsonpointer", selector) do
-    RockSolid.Traversal.fetch_in_schema!(value, RockSolid.Traversal.to_path(selector))
-  end
+  def resolve(value, "jsonpath" = type, selector) do
+    case JSONPath.values(value, selector) do
+      {:ok, [value]} ->
+        {:ok, value}
 
-  defp do_resolve(value, "jsonpath", selector) do
-    # Assuming that selector always expects a single value, since JSONPath
-    # always returns a list as descrbed in RFC-9535
-    {:ok, [resolved]} = JSONPath.values(value, selector)
-    resolved
+      {:ok, unexpected} ->
+        {:error,
+         %InvalidSelector{
+           context: value,
+           type: type,
+           selector: selector,
+           message: "expected single value, got: #{inspect(unexpected)}"
+         }}
+
+      {:error, exc} ->
+        {:error,
+         %InvalidSelector{
+           context: value,
+           type: type,
+           selector: selector,
+           message: Exception.message(exc)
+         }}
+    end
   end
 end

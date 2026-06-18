@@ -3,6 +3,9 @@ defmodule Cuerdo.CLI.Errors.UnexpectedArgs do
 
   @impl true
   def message(%{args: args}) do
-    "Unexpected arguments: #{Enum.join(args, ", ")}"
+    "Unexpected arguments: #{Enum.map_join(args, ", ", &arg/1)}"
   end
+
+  defp arg({flag, nil}), do: flag
+  defp arg({flag, value}), do: "#{flag}=#{value}"
 end

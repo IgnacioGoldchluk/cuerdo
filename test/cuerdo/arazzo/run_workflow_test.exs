@@ -120,7 +120,10 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
 
       assert {:error,
               %Cuerdo.Errors.ExecutionError{
-                error: %Cuerdo.Errors.InvalidExpression{expression: "$statusCode <> 200"}
+                error: %Cuerdo.Errors.InvalidExpression{
+                  expression: "$statusCode <> 200",
+                  message: "unexpected token" <> _
+                }
               }} =
                Arazzo.run_workflow(workflow_input, workflow_id, document)
     end
@@ -145,7 +148,10 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
 
       assert {:error,
               %Cuerdo.Errors.ExecutionError{
-                error: %Cuerdo.Errors.InvalidExpression{expression: ""}
+                error: %Cuerdo.Errors.InvalidExpression{
+                  expression: "",
+                  message: "unexpected end of input"
+                }
               }} =
                Arazzo.run_workflow(workflow_input, workflow_id, document)
     end
@@ -214,7 +220,10 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
 
       assert {:error,
               %Cuerdo.Errors.ExecutionError{
-                error: %Cuerdo.Errors.InvalidExpression{expression: {"$reponse.body", "#id"}}
+                error: %Cuerdo.Errors.InvalidExpression{
+                  expression: {"$reponse.body", "#id"},
+                  message: "does not match any valid expression"
+                }
               }} =
                Arazzo.run_workflow(workflow_input, workflow_id, document)
     end

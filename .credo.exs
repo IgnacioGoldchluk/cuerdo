@@ -131,7 +131,10 @@
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.NegatedConditionsWithElse, []},
           {Credo.Check.Refactor.Nesting, [max_nesting: 4]},
-          {Credo.Check.Refactor.RedundantWithClauseResult, []},
+          # Credo marks final with clause as redundant but it is not entirely correct.
+          # If we have to wrap the error in an exception, placing the final value as part of the
+          # with clause passes the unmatche expression to the else clause.
+          # {Credo.Check.Refactor.RedundantWithClauseResult, []},
           {Credo.Check.Refactor.RejectReject, []},
           {Credo.Check.Refactor.UnlessWithElse, []},
           {Credo.Check.Refactor.WithClauses, []},

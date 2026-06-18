@@ -38,8 +38,12 @@ defmodule Cuerdo.Arazzo.RuntimeExpression do
          {:ok, selector_resolved} <- Selector.resolve(replaced, type, selector) do
       selector_resolved
     else
-      {:unambiguous?, false} -> throw({:error, %InvalidExpression{expression: payload}})
-      {:error, e} = error when is_exception(e) -> throw(error)
+      {:unambiguous?, false} ->
+        message = "ambiguous payload #{inspect(payload)} could be literal or selector"
+        throw({:error, %InvalidExpression{expression: payload, message: message}})
+
+      {:error, e} = error when is_exception(e) ->
+        throw(error)
     end
   end
 

@@ -8,6 +8,14 @@ defmodule Cuerdo.CLITest do
   import ExUnit.CaptureIO
 
   describe "run/1" do
+    test "early return with error on invalid args" do
+      args = ["--document", Path.join(["test", "support", "arazzo.yaml"]), "--nun-runs", "1"]
+
+      capture_io(fn ->
+        assert {:error, %CLI.Errors.UnexpectedArgs{}} = CLI.run(args)
+      end)
+    end
+
     test "returns single error result on failue" do
       args = ["--document", Path.join(["test", "support", "arazzo.yaml"]), "--num-runs", "1"]
 

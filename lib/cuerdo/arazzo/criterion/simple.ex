@@ -19,11 +19,18 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
   @spec evaluate(String.t(), list(), Context.t()) :: {:ok, boolean()} | {:error, any()}
   def evaluate(condition, rev_path, %Context{} = context) when is_binary(condition) do
     case parse(condition) do
-      {:ok, ast} -> {:ok, do_evaluate(ast, rev_path, context)}
-      {:error, e} when is_binary(e) -> {:error, %InvalidExpression{expression: condition}}
+      {:ok, ast} ->
+        {:ok, do_evaluate(ast, rev_path, context)}
+
+      {:error, e} when is_binary(e) ->
+        {:error, %InvalidExpression{expression: condition, message: e}}
     end
-  rescue
-    _ -> {:error, %InvalidExpression{expression: condition, stacktrace: __STACKTRACE__}}
+  catch
+    {:error, exc} when is_exception(exc) ->
+      {:error, %InvalidExpression{expression: condition, message: Exception.message(exc)}}
+
+    {:error, msg} when is_binary(msg) ->
+      {:error, %InvalidExpression{expression: condition, message: msg}}
   end
 
   # Values
@@ -32,7 +39,7 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
   defp do_evaluate({:runtime_expression, expression}, rev_path, context) do
     case RuntimeExpression.resolve(expression, rev_path, context) do
       {:ok, value} -> value
-      {:error, exc} when is_exception(exc) -> raise exc
+      {:error, exc} = error when is_exception(exc) -> throw(error)
     end
   end
 
@@ -101,6 +108,8 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
          {ast, []} <- parse_or(tokens) do
       {:ok, ast}
     end
+  catch
+    {:error, _} = error -> error
   end
 
   def tokenize(condition) when is_binary(condition), do: tokenize(to_codepoints(condition), [])
@@ -142,11 +151,11 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
 
     case to_number(number_str) do
       {:ok, number} -> tokenize(rest, [{:literal, number} | acc])
-      _ -> {:error, "invalid number: #{number_str}"}
+      _ -> throw({:error, "invalid number: #{number_str}"})
     end
   end
 
-  defp tokenize([char | _], _), do: {:error, "unknown character: #{<<char>>}"}
+  defp tokenize([char | _], _), do: throw({:error, "unknown character: #{<<char>>}"})
 
   defp collect_string(tokens), do: collect_string(tokens, [])
   defp collect_string([?\\, ?' | rest], acc), do: collect_string(rest, [?' | acc])
@@ -154,7 +163,7 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
   defp collect_string([char | rest], acc), do: collect_string(rest, [char | acc])
 
   defp collect_string([], acc),
-    do: {:error, "unterminated single-quoted string: #{Enum.reverse(acc) |> to_string()}"}
+    do: throw({:error, "unterminated single-quoted string: #{Enum.reverse(acc) |> to_string()}"})
 
   defp to_codepoints(str) when is_binary(str) do
     for <<c::utf8 <- str>>, do: c
@@ -204,23 +213,16 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
 
   defp parse_not(tokens), do: parse_primary(tokens)
 
-  defp parse_primary([{:runtime_expression, _} = runtime_expression | rest]) do
-    {runtime_expression, rest}
-  end
-
-  defp parse_primary([{:literal, _} = lit | rest]) do
-    {lit, rest}
-  end
+  defp parse_primary([{:runtime_expression, _} = runtime_expr | rest]), do: {runtime_expr, rest}
+  defp parse_primary([{:literal, _} = lit | rest]), do: {lit, rest}
 
   defp parse_primary([:lparen | rest]) do
-    {expr, rest} = parse_or(rest)
-
-    case rest do
-      [:rparen | rest2] -> {expr, rest2}
-      _ -> {:error, "missing closing ')'"}
+    case parse_or(rest) do
+      {expr, [:rparen | rest]} -> {expr, rest}
+      _ -> throw({:error, "missing closing ')'"})
     end
   end
 
-  defp parse_primary([token | _]), do: {:error, "unexpected token: #{inspect(token)}"}
-  defp parse_primary([]), do: {:error, "unexpected end of input"}
+  defp parse_primary([token | _]), do: throw({:error, "unexpected token: #{inspect(token)}"})
+  defp parse_primary([]), do: throw({:error, "unexpected end of input"})
 end

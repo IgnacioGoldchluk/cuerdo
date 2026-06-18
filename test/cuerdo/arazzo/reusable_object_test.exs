@@ -10,7 +10,10 @@ defmodule Cuerdo.Arazzo.ReusableObjectTest do
       reusable_object = ReusableObject.new!(%{"reference" => "$components.parameters.invalid"})
 
       assert {:error,
-              %Cuerdo.Errors.InvalidExpression{expression: "$components.parameters.invalid"}} ==
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "$components.parameters.invalid",
+                message: "not in document parameters"
+              }} ==
                ReusableObject.resolve(reusable_object, default_context())
     end
   end

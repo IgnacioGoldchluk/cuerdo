@@ -77,7 +77,8 @@ defmodule Cuerdo.CLI.ArgsTest do
 
     test "returns error when receiving unknown args" do
       opts = ["--document", "path/to/arazzo.yaml", "--unknown-flag", "yes"]
-      assert {:error, %CLI.Errors.UnexpectedArgs{}} = CLI.Args.parse(opts)
+      assert {:error, %CLI.Errors.UnexpectedArgs{} = error} = CLI.Args.parse(opts)
+      assert "Unexpected arguments: --unknown-flag" == Exception.message(error)
     end
   end
 end

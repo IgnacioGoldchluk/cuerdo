@@ -48,7 +48,11 @@ defmodule Cuerdo.Arazzo.ParameterTest do
       parameters = [%ReusableObject{reference: "$components.parameters.fooPath"}]
       path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{expression: "$components.parameters.fooPath"}} =
+      assert {:error,
+              %InvalidExpression{
+                expression: "$components.parameters.fooPath",
+                message: "not in document parameters"
+              }} =
                Parameter.resolve(parameters, path, ctx)
     end
 
@@ -58,7 +62,11 @@ defmodule Cuerdo.Arazzo.ParameterTest do
 
       path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{expression: "$statusCode"}} =
+      assert {:error,
+              %InvalidExpression{
+                expression: "$statusCode",
+                message: "request not set in workflows.0.steps.0"
+              }} =
                Parameter.resolve(parameters, path, ctx)
     end
 

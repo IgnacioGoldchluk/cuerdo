@@ -98,8 +98,9 @@ defmodule Cuerdo.Arazzo.Criterion do
       {:error, e} = error when is_exception(e) ->
         error
 
-      _ ->
-        {:error, %InvalidExpression{expression: criterion_context}}
+      val when not is_binary(val) and not is_number(val) ->
+        msg = "expression does not evaluate to a string: #{inspect(val)}"
+        {:error, %InvalidExpression{expression: criterion_context, message: msg}}
     end
   end
 
