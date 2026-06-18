@@ -1,5 +1,5 @@
 defmodule Cuerdo.Errors.InvalidExpression do
-  defexception [:expression, :stacktrace]
+  defexception [:expression, :stacktrace, :message]
 
   @impl true
   def message(%{expression: expression}) when is_binary(expression) do

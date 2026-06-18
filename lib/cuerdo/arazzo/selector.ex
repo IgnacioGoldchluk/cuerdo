@@ -21,12 +21,12 @@ defmodule Cuerdo.Arazzo.Selector do
   def resolve(value, type, selector) do
     {:ok, do_resolve(value, type, selector)}
   rescue
-    # Ya fue que se yo
+    # TODO: Fix this
     _ -> {:error, %InvalidSelector{context: value, type: type, selector: selector}}
   end
 
   defp do_resolve(value, "jsonpointer", selector) do
-    RockSolid.Traversal.get_in_schema(value, RockSolid.Traversal.to_path(selector))
+    RockSolid.Traversal.fetch_in_schema!(value, RockSolid.Traversal.to_path(selector))
   end
 
   defp do_resolve(value, "jsonpath", selector) do

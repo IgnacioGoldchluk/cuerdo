@@ -3,7 +3,7 @@ defmodule Cuerdo.Arazzo.Document do
   Top-level Arazzo [Document](https://spec.openapis.org/arazzo/v1.0.1.html#arazzo-specification-object)
   """
   alias Cuerdo.Arazzo.{Components, Info, SourceDescription, Utils, Workflow}
-  alias Cuerdo.Errors.InvalidWorkflowId
+  alias Cuerdo.Errors.{InvalidSourceDescription, InvalidWorkflowId}
   alias Cuerdo.Graph
 
   @type t :: %__MODULE__{}
@@ -82,15 +82,28 @@ defmodule Cuerdo.Arazzo.Document do
   @doc """
   Returns the workflow by id
   """
-  def workflow(%__MODULE__{workflows: workflows}, workflow_id) do
-    Enum.find(workflows, &(&1.workflowId == workflow_id))
+  def fetch_workflow(%__MODULE__{workflows: workflows} = document, workflow_id) do
+    case Enum.find(workflows, &(&1.workflowId == workflow_id)) do
+      nil -> {:error, %InvalidWorkflowId{id: workflow_id, valid_ids: workflow_ids(document)}}
+      %Workflow{} = workflow -> {:ok, workflow}
+    end
   end
 
   @doc """
   Returns the source description by name
   """
-  def source_description(%__MODULE__{sourceDescriptions: source_descriptions}, name) do
-    Enum.find(source_descriptions, &(&1.name == name))
+  def fetch_source_description(
+        %__MODULE__{sourceDescriptions: source_descriptions} = document,
+        name
+      ) do
+    case Enum.find(source_descriptions, &(&1.name == name)) do
+      nil ->
+        {:error,
+         %InvalidSourceDescription{name: name, valid_names: source_description_names(document)}}
+
+      %SourceDescription{} = source_description ->
+        {:ok, source_description}
+    end
   end
 
   defp workflow_ids(%__MODULE__{workflows: workflows}), do: Enum.map(workflows, & &1.workflowId)

@@ -37,11 +37,11 @@ defmodule Cuerdo.OpenAPI do
     [method, url_path | rest] = Enum.reverse(json_path)
 
     path_parameters =
-      RockSolid.Traversal.get_in_schema(open_api_schema, rest ++ [url_path])
+      RockSolid.Traversal.fetch_in_schema!(open_api_schema, rest ++ [url_path])
       |> Map.get("parameters", [])
 
     open_api_schema
-    |> RockSolid.Traversal.get_in_schema(json_path)
+    |> RockSolid.Traversal.fetch_in_schema!(json_path)
     |> Map.merge(%{
       "method" => method,
       "path" => url_path,
@@ -69,7 +69,7 @@ defmodule Cuerdo.OpenAPI do
 
   defp expand_refs(%{"$ref" => json_pointer}, rev_path, open_api_schema) do
     open_api_schema
-    |> RockSolid.Traversal.get_in_schema(RockSolid.Traversal.to_path(json_pointer))
+    |> RockSolid.Traversal.fetch_in_schema!(RockSolid.Traversal.to_path(json_pointer))
     |> expand_refs(rev_path, open_api_schema)
   end
 

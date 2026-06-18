@@ -51,7 +51,7 @@ defmodule Cuerdo.Arazzo do
          {:ok, idx} <- Document.fetch_workflow_index(ctx.document, workflow_id),
          ctx = Context.put_inputs(ctx, workflow_id, workflow_inputs),
          base_rev_path = [idx, "workflows"],
-         workflow = Document.workflow(ctx.document, workflow_id),
+         {:ok, workflow} = Document.fetch_workflow(ctx.document, workflow_id),
          :ok <- Workflow.validate_inputs(workflow_inputs, workflow, ctx),
          {:ok, %Context{} = ctx} <-
            run_steps(workflow.steps, base_rev_path, ctx, execution_path, workflow.parameters),

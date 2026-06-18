@@ -33,7 +33,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   def run_all(workflow_id, arazzo_document, opts) do
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
-         %Arazzo.Workflow{} = workflow = Arazzo.Document.workflow(ctx.document, workflow_id),
+         {:ok, workflow} <- Arazzo.Document.fetch_workflow(ctx.document, workflow_id),
          {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx),
          {:ok, generator} <- generator(schema, workflow_id, opts) do
       halt_on_error? = Keyword.fetch!(opts, :halt_on_error)

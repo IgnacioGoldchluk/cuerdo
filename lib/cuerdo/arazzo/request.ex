@@ -11,11 +11,14 @@ defmodule Cuerdo.Arazzo.Request do
   """
   @spec fetch_base_url(String.t(), Context.t()) :: {:ok, String.t()} | {:error, Exception.t()}
   def fetch_base_url(source_description_name, %Context{} = context) do
-    %{url: source_description_url} =
-      Document.source_description(context.document, source_description_name)
+    case Document.fetch_source_description(context.document, source_description_name) do
+      {:ok, %{url: url}} -> do_fetch_base_url(url, source_description_name, context)
+      error -> error
+    end
+  end
 
+  defp do_fetch_base_url(source_description_url, source_description_name, context) do
     source_description_uri = URI.parse(source_description_url)
-
     # We can ignore the updated context since we fetched the operation already
     case Context.fetch_source_description(context, source_description_name) do
       {:ok, %{"servers" => [%{"url" => url} | _]}, _updated_ctx} ->
