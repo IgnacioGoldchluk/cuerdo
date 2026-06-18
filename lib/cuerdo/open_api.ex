@@ -34,48 +34,57 @@ defmodule Cuerdo.OpenAPI do
     # "/users/log-in" is represented as "#/paths/~1users~1log-in/post", but inside
     # post there is no info, therefore we have to get the method + path from the operationPath
     # itself
-    [method, url_path | rest] = Enum.reverse(json_path)
 
-    path_parameters =
-      RockSolid.Traversal.fetch_in_schema!(open_api_schema, rest ++ [url_path])
-      |> Map.get("parameters", [])
-
-    open_api_schema
-    |> RockSolid.Traversal.fetch_in_schema!(json_path)
-    |> Map.merge(%{
-      "method" => method,
-      "path" => url_path,
-      "source_description_name" => source_description_name
-    })
-    |> Map.update("parameters", path_parameters, &merge_parameters(&1, path_parameters))
-    |> expand_refs([], open_api_schema)
-    |> OpenAPI.Operation.new()
+    with [method, url_path | rest] <- Enum.reverse(json_path),
+         overlays = %{
+           "method" => method,
+           "path" => url_path,
+           "source_description_name" => source_description_name
+         },
+         {:ok, params} <- RockSolid.Traversal.fetch_in_schema(open_api_schema, rest ++ [url_path]),
+         parameters = Map.get(params, "parameters", []),
+         {:ok, operation} <- RockSolid.Traversal.fetch_in_schema(open_api_schema, json_path),
+         operation =
+           Map.merge(operation, overlays)
+           |> Map.update("parameters", parameters, &merge_parameters(&1, parameters)),
+         {:ok, expanded} <- expand_refs(operation, [], open_api_schema) do
+      OpenAPI.Operation.new(expanded)
+    end
   end
 
-  defp expand_refs(value, _rev_path, _open_api_schema) when is_atomic(value), do: value
+  defp expand_refs(value, rev_path, open_api_schema) do
+    {:ok, do_expand_refs(value, rev_path, open_api_schema)}
+  catch
+    {:error, _} = error -> error
+  end
 
-  defp expand_refs(value, rev_path, open_api_schema) when is_list(value) do
+  defp do_expand_refs(value, _rev_path, _open_api_schema) when is_atomic(value), do: value
+
+  defp do_expand_refs(value, rev_path, open_api_schema) when is_list(value) do
     value
     |> Enum.with_index()
     |> Enum.map(fn {element, idx} ->
-      expand_refs(element, [to_string(idx) | rev_path], open_api_schema)
+      do_expand_refs(element, [to_string(idx) | rev_path], open_api_schema)
     end)
   end
 
   # Ignore because they might contain recursive paths and they're used for validating
   # request/response only
-  defp expand_refs(value, ["schema", _media_type, "content", "requestBody"], _), do: value
-  defp expand_refs(value, ["schema", _media_type, "content", _code, "responses"], _), do: value
+  defp do_expand_refs(value, ["schema", _media_type, "content", "requestBody"], _), do: value
+  defp do_expand_refs(value, ["schema", _media_type, "content", _code, "responses"], _), do: value
 
-  defp expand_refs(%{"$ref" => json_pointer}, rev_path, open_api_schema) do
-    open_api_schema
-    |> RockSolid.Traversal.fetch_in_schema!(RockSolid.Traversal.to_path(json_pointer))
-    |> expand_refs(rev_path, open_api_schema)
+  defp do_expand_refs(%{"$ref" => json_pointer}, rev_path, open_api_schema) do
+    path = RockSolid.Traversal.to_path(json_pointer)
+
+    case RockSolid.Traversal.fetch_in_schema(open_api_schema, path) do
+      {:ok, value} -> do_expand_refs(value, rev_path, open_api_schema)
+      {:error, _} = error -> throw(error)
+    end
   end
 
-  defp expand_refs(value, rev_path, open_api_schema) when is_map(value) do
+  defp do_expand_refs(value, rev_path, open_api_schema) when is_map(value) do
     Map.new(value, fn {key, val} ->
-      {key, expand_refs(val, [key | rev_path], open_api_schema)}
+      {key, do_expand_refs(val, [key | rev_path], open_api_schema)}
     end)
   end
 

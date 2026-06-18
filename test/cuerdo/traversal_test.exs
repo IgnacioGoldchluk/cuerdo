@@ -3,13 +3,14 @@ defmodule Cuerdo.TraversalTest do
   import Cuerdo.ArazzoFixtures
 
   alias Cuerdo.Arazzo.Context
+  alias Cuerdo.Errors.InvalidExpression
   alias Cuerdo.Traversal
 
   setup_all do
     %{document: example_document()}
   end
 
-  describe "get_value/2" do
+  describe "fetch_value/2" do
     setup do
       mock_openapi_fetch()
       :ok
@@ -218,6 +219,117 @@ defmodule Cuerdo.TraversalTest do
 
       type_path = "$sourceDescriptions.#{name}.type"
       assert {:ok, src_descr["type"]} == Traversal.fetch_value(type_path, [], ctx)
+    end
+
+    test "fails retrieving response when stepId does not exist", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [123, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "invalid step index 123"}} =
+               Traversal.fetch_value("$statusCode", rev_path, ctx)
+    end
+
+    test "fails retrieving request when not set yet", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "request not set" <> _}} =
+               Traversal.fetch_value("$request.body", rev_path, ctx)
+    end
+
+    test "fails retrieving response when not set yet", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "request not set" <> _}} =
+               Traversal.fetch_value("$statusCode", rev_path, ctx)
+    end
+
+    test "fails when workflow index is invalid", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 123, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "invalid workflow index 123"}} =
+               Traversal.fetch_value("$statusCode", rev_path, ctx)
+    end
+
+    test "fails retrieving request when stepId does not exist", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [123, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "invalid step index 123"}} =
+               Traversal.fetch_value("$request.body", rev_path, ctx)
+    end
+
+    test "fails retrieving invalid source description name", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "Invalid sourceDescription name" <> _}} =
+               Traversal.fetch_value("$sourceDescriptions.invalidName.url", rev_path, ctx)
+    end
+
+    test "fails retrieving invalid source description field", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "field aaaa not in source description" <> _}} =
+               Traversal.fetch_value("$sourceDescriptions.bookStore.aaaa", rev_path, ctx)
+    end
+
+    test "fails input for invalid workflow index", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 123, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "invalid workflow index 123"}} =
+               Traversal.fetch_value("$inputs.invalidInput", rev_path, ctx)
+    end
+
+    test "fails for missing inputs", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "input invalidInput not set" <> _}} =
+               Traversal.fetch_value("$inputs.invalidInput", rev_path, ctx)
+    end
+
+    test "fails output for invalid workflow index", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 123, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "invalid workflow index 123"}} =
+               Traversal.fetch_value("$outputs.invalidOutputs", rev_path, ctx)
+    end
+
+    test "fails for missing step outputs", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "no output invalidOutput in step" <> _}} =
+               Traversal.fetch_value(
+                 "$steps.createBookStep.outputs.invalidOutput",
+                 rev_path,
+                 ctx
+               )
+    end
+
+    test "fails for missing workflow outputs", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      assert {:error, %InvalidExpression{message: "no output invalidOutput" <> _}} =
+               Traversal.fetch_value("$outputs.invalidOutput", rev_path, ctx)
+    end
+
+    test "fails for missing header", %{document: document} do
+      {:ok, ctx} = Context.from_document(document)
+      rev_path = [0, "steps", 0, "workflows"]
+
+      ctx =
+        Context.put_step_response(ctx, "createAndRetrieveBook", "createBookStep", %Req.Response{})
+
+      assert {:error, %InvalidExpression{message: "header limit missing" <> _}} =
+               Traversal.fetch_value("$response.header.Limit", rev_path, ctx)
     end
   end
 end

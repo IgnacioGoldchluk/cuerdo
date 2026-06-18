@@ -67,6 +67,9 @@ defmodule Cuerdo.Traversal do
       nil ->
         {:ok, workflow_id} = workflow_id(reversed_path, ctx)
         {:error, "input #{value} not set for workflow #{workflow_id}"}
+
+      error ->
+        error
     end
   end
 
@@ -266,6 +269,7 @@ defmodule Cuerdo.Traversal do
     else
       %{request: nil} -> {:error, "request not set in #{path_to_string(reversed_path)}"}
       {:error, exc} = error when is_exception(exc) -> error
+      {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
 
@@ -277,6 +281,7 @@ defmodule Cuerdo.Traversal do
     else
       %{request: nil} -> {:error, "request not set in #{path_to_string(reversed_path)}"}
       {:error, exc} = error when is_exception(exc) -> error
+      {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
 
