@@ -28,15 +28,10 @@ defmodule Cuerdo.MixProject do
   end
 
   def application do
-    application = [
-      extra_applications: [:logger]
+    [
+      extra_applications: [:logger],
+      mod: {Cuerdo.CLI, []}
     ]
-
-    if System.get_env("BUILD_CLI") in ["1", "true"] do
-      Keyword.put(application, :mod, {Cuerdo.CLI, []})
-    else
-      application
-    end
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]

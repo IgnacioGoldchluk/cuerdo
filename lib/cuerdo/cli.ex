@@ -26,8 +26,12 @@ defmodule Cuerdo.CLI do
 
   @impl true
   def start(_, _) do
-    Logger.info("Running Cuerdo Arazzo runner")
-    main(Burrito.Util.Args.argv())
+    if Application.get_env(:cuerdo, :run_cli, true) do
+      Logger.info("Running Cuerdo Arazzo runner")
+      main(Burrito.Util.Args.argv())
+    end
+
+    Supervisor.start_link([], strategy: :one_for_one)
   end
 
   def main(args) do
