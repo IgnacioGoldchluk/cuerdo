@@ -3,7 +3,6 @@ defmodule Cuerdo.CLI do
   CLI for automated test runner
 
   ## Options
-  - `--document` - Arazzo document path.
   - `--num-runs` - The number of cases to generate for each workflow
   - `--exclude` - Comma-separated list of workflow ids to exclude from the document
   - `--only` - Comma-separated list of workflow ids to execute from the document
@@ -47,9 +46,15 @@ defmodule Cuerdo.CLI do
     end
   end
 
-  def run(args) do
+  def run([]) do
+    msg = "Empty arguments. Pass path/to/arazzo.yaml"
+    Logger.error(msg)
+    {:error, %ArgumentError{message: msg}}
+  end
+
+  def run([document_path | args]) do
     with {:ok, valid_args} <- CLI.Args.parse(args),
-         {:ok, document} <- YamlElixir.read_from_file(valid_args[:document]),
+         {:ok, document} <- YamlElixir.read_from_file(document_path),
          {:ok, parsed_doc} <- Arazzo.Document.new(document),
          {:ok, workflow_ids} <-
            ArazzoCase.Runner.workflow_ids(parsed_doc, valid_args[:only], valid_args[:exclude]) do

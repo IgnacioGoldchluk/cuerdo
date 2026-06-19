@@ -22,7 +22,6 @@ defmodule Cuerdo.CLI.Args do
 
   defp schema do
     [
-      document: [type: :string, required: true],
       num_runs: [type: :pos_integer, default: 20],
       halt_on_error: [type: :boolean, default: false],
       exclude: [type: {:custom, __MODULE__, :split_ids, []}],
@@ -34,7 +33,6 @@ defmodule Cuerdo.CLI.Args do
 
   defp cli_opts do
     [
-      document: :string,
       num_runs: :integer,
       exclude: :string,
       only: :string,
