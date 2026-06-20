@@ -60,7 +60,7 @@ defmodule Cuerdo.ArazzoTest do
       inputs = %{"const" => "{$sourceDescriptions.bookStore.url#/foo}"}
 
       expected = %{
-        "const" => "http://127.0.0.1:8000/openapi.json#/foo",
+        "const" => "http://localhost:8000/openapi.json#/foo",
         "components" => %{"inputs" => %{}}
       }
 
@@ -105,7 +105,7 @@ defmodule Cuerdo.ArazzoTest do
           "bar" => %{"$ref" => "#/components/inputs/bar"},
           "foo" => %{
             "$ref" =>
-              "http://127.0.0.1:8000/openapi.json#/components/schemas/Book/properties/isbn"
+              "http://localhost:8000/openapi.json#/components/schemas/Book/properties/isbn"
           },
           "baz" => %{"constant" => 1}
         },
@@ -142,7 +142,7 @@ defmodule Cuerdo.ArazzoTest do
 
       request = %Req.Request{
         body: req_body |> JSON.encode!(),
-        url: "http://127.0.0.1:8000/books" |> URI.parse(),
+        url: "http://localhost:8000/books" |> URI.parse(),
         method: :post,
         headers: %{"content-type" => "application/json"}
       }

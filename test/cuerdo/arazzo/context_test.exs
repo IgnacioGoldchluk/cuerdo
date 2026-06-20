@@ -73,7 +73,7 @@ defmodule Cuerdo.Arazzo.ContextTest do
     @tag skip: "Test as part of a workflow instead"
     test "creates context with parsed YAML OpenAPI schema" do
       Req.Test.expect(Cuerdo.Client, fn conn ->
-        assert conn.host == "127.0.0.1"
+        assert conn.host == "localhost"
         assert conn.request_path == "/openapi.yaml"
 
         Plug.Conn.send_resp(
@@ -87,7 +87,7 @@ defmodule Cuerdo.Arazzo.ContextTest do
         RockSolid.Traversal.put_in_schema!(
           example_document(),
           ["sourceDescriptions", "0", "url"],
-          "http://127.0.0.1:8000/openapi.yaml"
+          "http://localhost:8000/openapi.yaml"
         )
 
       assert {:ok, %Context{} = ctx} = Context.new(document)
