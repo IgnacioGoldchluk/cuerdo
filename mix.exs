@@ -49,6 +49,7 @@ defmodule Cuerdo.MixProject do
       {:stream_data, "~> 1.0"},
       {:nimble_options, "~> 1.0"},
       {:burrito, "~> 1.0"},
+      {:table_rex, "~> 4.1.0"},
       {:plug, "~> 1.0", only: :test},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

@@ -107,9 +107,21 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       total_time = Enum.sum_by(result, & &1.execution_time_ms)
 
-      expected_msg = """
-      Arazzo document test suite summary\n\nTotal execution time: #{total_time}ms\n\ngetPeople: 1/2 cases passed\n
-      """
+      expected_msg =
+        """
+
+        Arazzo document test suite summary
+
+        Total execution time: #{total_time}ms
+
+        +-------------+--------+-------+
+        | Workflow ID | PASSED | TOTAL |
+        +-------------+--------+-------+
+        | getPeople   | 1      | 2     |
+        +-------------+--------+-------+
+
+
+        """
 
       assert ExUnit.CaptureIO.capture_io(fn -> Report.write(:stdout, result, nil) end) ==
                expected_msg

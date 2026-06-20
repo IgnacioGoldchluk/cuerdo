@@ -76,6 +76,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
       |> Enum.reverse()
     else
       {:error, exc} when is_exception(exc) ->
+        Logger.error("generating tests for #{workflow_id}: #{Exception.message(exc)}")
         [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
     end
   end

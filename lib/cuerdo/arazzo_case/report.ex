@@ -14,26 +14,26 @@ defmodule Cuerdo.ArazzoCase.Report do
   end
 
   defp stdout(results) when is_list(results) do
-    results_by_workflow_id = Enum.group_by(results, & &1.workflow_id)
+    summaries = Enum.group_by(results, & &1.workflow_id) |> Enum.map(&to_summary/1)
     exec_time = Enum.sum_by(results, & &1.execution_time_ms)
 
-    longest_id = results_by_workflow_id |> Map.keys() |> Enum.map(&String.length/1) |> Enum.max()
+    header = ["Workflow ID", "PASSED", "TOTAL"]
 
     msg = """
+
     Arazzo document test suite summary
 
     Total execution time: #{exec_time}ms
 
-    #{Enum.map_join(results_by_workflow_id, "\n", &to_summary_line(&1, longest_id))}
+    #{TableRex.quick_render!(summaries, header)}
     """
 
     IO.puts(msg)
   end
 
-  defp to_summary_line({workflow_id, results}, longest_id) do
+  defp to_summary({workflow_id, results}) do
     total = length(results)
-    total_passed = Enum.count(results, &(&1.status == :passed))
-
-    "#{String.pad_trailing(workflow_id, longest_id)}: #{total_passed}/#{total} cases passed"
+    passed = Enum.count(results, &(&1.status == :passed))
+    [workflow_id, passed, total]
   end
 end
