@@ -32,6 +32,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   end
 
   def run_all(workflow_id, arazzo_document, opts) do
+    print_start_workflow(workflow_id)
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
          {:ok, workflow} <- Arazzo.Document.fetch_workflow(ctx.document, workflow_id),
@@ -57,7 +58,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
               status: :passed
             }
 
-            Logger.debug(Result.format_message(result), ansi_color: :green)
+            print_result(:passed)
             {:cont, {[result | results], Context.transfer_cache(ctx, updated_ctx)}}
 
           {time_ms, {:error, exc}} ->
@@ -70,7 +71,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
               logs: HAR.to_har(exc.api_calls)
             }
 
-            Logger.debug(Result.format_message(result), ansi_color: :red)
+            print_result(:failed)
 
             new_acc = {[result | results], ctx}
             if(halt_on_error?, do: {:halt, new_acc}, else: {:cont, new_acc})
@@ -81,6 +82,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
     else
       {:error, exc} when is_exception(exc) ->
         Logger.error("generating tests for #{workflow_id}: #{Exception.message(exc)}")
+        print_result(:error)
         [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
     end
   end
@@ -89,7 +91,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   defp run_workflow(workflow_inputs, workflow_id, ctx) do
     :timer.tc(fn -> Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) end, :millisecond)
   end
-
+# ./cuerdo test/support/arazzo.yaml --num-runs=1 --report-output json --report-file asd.json
   defp generator(schema, workflow_id, opts) do
     base = RockSolid.from_schema(schema, resolver: opts[:json_schema_resolver])
 
@@ -100,5 +102,21 @@ defmodule Cuerdo.ArazzoCase.Runner do
     |> then(&{:ok, &1})
   rescue
     exc -> {:error, exc}
+  end
+
+  defp print_start_workflow(workflow_id) do
+    if Application.get_env(:cuerdo, :stdio_enabled, true) do
+      IO.write("\n#{workflow_id}: ")
+    end
+  end
+
+  defp print_result(status) do
+    if Application.get_env(:cuerdo, :stdio_enabled, true) do
+      case status do
+        :passed -> IO.write(IO.ANSI.format([:green, "P"]))
+        :failed -> IO.write(IO.ANSI.format([:red, "F"]))
+        :error -> IO.write(IO.ANSI.format([:red, "E"]))
+      end
+    end
   end
 end

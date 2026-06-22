@@ -11,7 +11,7 @@ defmodule Cuerdo.Client do
   """
   @spec fetch_schema(String.t()) :: {:ok, map()} | {:error, any()}
   def fetch_schema(url) do
-    Logger.info("fetching OpenAPI/Arazzo schema at #{url}")
+    Logger.debug("fetching OpenAPI/Arazzo schema at #{url}")
 
     case URI.parse(url) do
       %URI{scheme: scheme} when scheme in [nil, "file"] ->
