@@ -2,7 +2,7 @@ defmodule Cuerdo.Arazzo.Context do
   @moduledoc """
   Internal Arazzo Context. Stores workflows and steps inputs/outputs, request/response, etc.
   """
-  alias Cuerdo.Arazzo.Context.Cache
+  alias Cuerdo.Arazzo.Context.{APICalls, Cache}
   alias Cuerdo.Arazzo.{Document, SourceDescription, Workflow}
   alias Cuerdo.Errors.{InvalidDocument, InvalidSourceDescription}
 
@@ -15,8 +15,7 @@ defmodule Cuerdo.Arazzo.Context do
     # Workflow outputs in the form of
     # %{workflowId => %{outputKey => outputValue, steps: %{stepId => output}}}
     :outputs,
-    # Steps objects can do a single request/response each, so we can store as
-    # %{workflowId => %{stepId => %{request: req, response: resps}}}
+    # List of API request/response calls with their
     :api_calls,
     # Resolver module for building and validating JSV schemas
     :resolver,
@@ -48,7 +47,7 @@ defmodule Cuerdo.Arazzo.Context do
            document: document,
            inputs: empty_inputs(document),
            outputs: empty_outputs(document),
-           api_calls: empty_api_calls(document),
+           api_calls: [],
            resolver: Keyword.fetch!(opts, :resolver),
            cache: create_cache(Keyword.fetch!(opts, :init_cache?))
          }}
@@ -86,7 +85,7 @@ defmodule Cuerdo.Arazzo.Context do
          document: document,
          inputs: empty_inputs(document),
          outputs: empty_outputs(document),
-         api_calls: empty_api_calls(document),
+         api_calls: [],
          resolver: Keyword.fetch!(opts, :resolver),
          cache: create_cache(Keyword.get(opts, :init_cache?, false))
        }}
@@ -206,15 +205,6 @@ defmodule Cuerdo.Arazzo.Context do
     end)
   end
 
-  defp empty_api_calls(%Document{} = document) do
-    Map.new(document.workflows, fn %Workflow{} = workflow ->
-      steps =
-        for step <- workflow.steps, into: %{}, do: {step.stepId, %__MODULE__.APICalls{}}
-
-      {workflow.workflowId, steps}
-    end)
-  end
-
   @doc """
   Puts a map of `%{input_name => value}` in the `worfklow_id` inputs. Returns
   the updated context
@@ -243,25 +233,34 @@ defmodule Cuerdo.Arazzo.Context do
   end
 
   @doc false
-  def put_step_response(
+  def put_step_request_response(
         %__MODULE__{api_calls: api_calls} = ctx,
-        workflow_id,
-        step_id,
+        execution_path,
+        %Req.Request{} = request,
         %Req.Response{} = response
       ) do
-    api_call = %{api_calls[workflow_id][step_id] | response: response}
-    %__MODULE__{ctx | api_calls: put_in(api_calls, [workflow_id, step_id], api_call)}
+    api_call = APICalls.new!(%{path: execution_path, request: request, response: response})
+
+    %__MODULE__{ctx | api_calls: [api_call | api_calls]}
   end
 
   @doc false
-  def put_step_request(
-        %__MODULE__{api_calls: api_calls} = ctx,
-        workflow_id,
-        step_id,
-        %Req.Request{} = request
-      ) do
-    api_call = %{api_calls[workflow_id][step_id] | request: request}
-    %__MODULE__{ctx | api_calls: put_in(api_calls, [workflow_id, step_id], api_call)}
+  def fetch_step_request(%__MODULE__{api_calls: api_calls}, workflow_id, step_id) do
+    suffix = [workflow_id, step_id]
+
+    case Enum.find(api_calls, fn api_call -> List.ends_with?(api_call.path, suffix) end) do
+      %APICalls{request: request} -> {:ok, request}
+      nil -> {:error, "request not set for #{workflow_id}.#{step_id}"}
+    end
+  end
+
+  def fetch_step_response(%__MODULE__{api_calls: api_calls}, workflow_id, step_id) do
+    suffix = [workflow_id, step_id]
+
+    case Enum.find(api_calls, fn api_call -> List.ends_with?(api_call.path, suffix) end) do
+      %APICalls{response: response} -> {:ok, response}
+      nil -> {:error, "response not set for #{workflow_id}.#{step_id}"}
+    end
   end
 
   @doc """
@@ -279,15 +278,6 @@ defmodule Cuerdo.Arazzo.Context do
   @spec workflow_outputs(t(), String.t()) :: map()
   def workflow_outputs(%__MODULE__{outputs: outputs}, workflow_id) do
     outputs |> Map.fetch!(workflow_id) |> Map.delete(:steps)
-  end
-
-  @doc """
-  Returns the request and response structs for the given stepId
-  """
-  @spec step_request_response(t(), String.t(), String.t()) ::
-          %{request: Req.Request.t(), response: Req.Response.t()} | nil
-  def step_request_response(%__MODULE__{api_calls: api_calls}, workflow_id, step_id) do
-    get_in(api_calls, [workflow_id, step_id])
   end
 
   @doc """

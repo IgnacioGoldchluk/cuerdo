@@ -107,7 +107,7 @@ defmodule Cuerdo.Arazzo do
          :ok <- Parameter.all_present(parameters, operation.parameters),
          request = Step.build_request(base_url, parameters, request_body, operation, step.timeout),
          {request, %Req.Response{} = response} <- Req.Request.run_request(request),
-         ctx_req_resp = put_request_response_step(ctx, workflow_id, step_id, request, response),
+         ctx_req_resp = put_request_response_step(ctx, execution_path, request, response),
          {:ok, new_ctx} <- update_step_outputs(ctx_req_resp, workflow_id, step_id, rev_path),
          :ok <- Criterion.evaluate_many(success_criteria, rev_path, new_ctx),
          :ok <- Response.matches(response, operation, new_ctx) do
@@ -241,10 +241,9 @@ defmodule Cuerdo.Arazzo do
   end
 
   @doc false
-  def put_request_response_step(%Context{} = ctx, workflow_id, step_id, request, response) do
-    ctx
-    |> Context.put_step_request(workflow_id, step_id, request |> with_decoded_body())
-    |> Context.put_step_response(workflow_id, step_id, response)
+  def put_request_response_step(%Context{} = ctx, execution_path, request, response) do
+    request = with_decoded_body(request)
+    Context.put_step_request_response(ctx, execution_path, request, response)
   end
 
   defp with_decoded_body(%Req.Request{body: nil} = request), do: request

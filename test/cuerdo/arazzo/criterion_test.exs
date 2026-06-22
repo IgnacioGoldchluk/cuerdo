@@ -53,12 +53,13 @@ defmodule Cuerdo.Arazzo.CriterionTest do
         body: %{"name" => "Alice", "age" => 20}
       }
 
+      request = %Req.Request{}
+
       ctx =
         Cuerdo.Arazzo.put_request_response_step(
           context,
-          workflow_id,
-          step_id,
-          %Req.Request{},
+          [workflow_id, step_id],
+          request,
           response
         )
 
@@ -104,12 +105,13 @@ defmodule Cuerdo.Arazzo.CriterionTest do
         body: %{"people" => [%{"name" => "Alice", "age" => 20}, %{"name" => "Bob", "age" => 30}]}
       }
 
+      request = %Req.Request{}
+
       ctx =
         Cuerdo.Arazzo.put_request_response_step(
           context,
-          workflow_id,
-          step_id,
-          %Req.Request{},
+          [workflow_id, step_id],
+          request,
           response
         )
 

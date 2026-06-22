@@ -263,11 +263,9 @@ defmodule Cuerdo.Traversal do
 
   defp request(reversed_path, %Context{} = ctx) do
     with {:ok, workflow_id} <- workflow_id(reversed_path, ctx),
-         {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx),
-         %{request: %Req.Request{} = request} <- get_in(ctx.api_calls, [workflow_id, step_id]) do
-      {:ok, request}
+         {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx) do
+      Context.fetch_step_request(ctx, workflow_id, step_id)
     else
-      %{request: nil} -> {:error, "request not set in #{path_to_string(reversed_path)}"}
       {:error, exc} = error when is_exception(exc) -> error
       {:error, msg} when is_binary(msg) -> {:error, msg}
     end
@@ -275,17 +273,13 @@ defmodule Cuerdo.Traversal do
 
   defp response(reversed_path, %Context{} = ctx) do
     with {:ok, workflow_id} <- workflow_id(reversed_path, ctx),
-         {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx),
-         %{response: %Req.Response{} = response} <- get_in(ctx.api_calls, [workflow_id, step_id]) do
-      {:ok, response}
+         {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx) do
+      Context.fetch_step_response(ctx, workflow_id, step_id)
     else
-      %{request: nil} -> {:error, "request not set in #{path_to_string(reversed_path)}"}
       {:error, exc} = error when is_exception(exc) -> error
       {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
-
-  defp path_to_string(reversed_path), do: reversed_path |> Enum.reverse() |> Enum.join(".")
 
   defp field_to_atom(field) when is_binary(field) do
     {:ok, String.to_existing_atom(field)}

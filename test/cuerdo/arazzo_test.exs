@@ -158,7 +158,7 @@ defmodule Cuerdo.ArazzoTest do
       {:ok, ctx} =
         document
         |> Context.new!()
-        |> Arazzo.put_request_response_step(workflow_id, step_id, request, response)
+        |> Arazzo.put_request_response_step([workflow_id, step_id], request, response)
         |> Arazzo.update_step_outputs(workflow_id, step_id, [0, "steps", 0, "workflows"])
 
       step_outputs = Context.step_outputs(ctx, workflow_id, step_id)

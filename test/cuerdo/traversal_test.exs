@@ -107,11 +107,12 @@ defmodule Cuerdo.TraversalTest do
       step_id = Enum.fetch!(workflow["steps"], 0)["stepId"]
 
       response = %Req.Response{status: 200}
+      request = %Req.Request{}
 
       ctx =
         document
         |> Context.new!()
-        |> Context.put_step_response(workflow_id, step_id, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response)
 
       rev_path = [0, "steps", 0, "workflows"]
       assert {:ok, 200} = Traversal.fetch_value("$statusCode", rev_path, ctx)
@@ -131,8 +132,7 @@ defmodule Cuerdo.TraversalTest do
       ctx =
         document
         |> Context.new!()
-        |> Context.put_step_request(workflow_id, step_id, request)
-        |> Context.put_step_response(workflow_id, step_id, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response)
 
       rev_path = [0, "steps", 0, "workflows"]
 
@@ -159,10 +159,12 @@ defmodule Cuerdo.TraversalTest do
         body: %{"bookId" => book_id}
       }
 
+      response = %Req.Response{}
+
       ctx =
         document
         |> Context.new!()
-        |> Context.put_step_request(workflow_id, step_id, request)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response)
 
       rev_path = [0, "steps", 0, "workflows"]
       assert {:ok, url} == Traversal.fetch_value("$url", rev_path, ctx)
@@ -241,7 +243,7 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "request not set" <> _}} =
+      assert {:error, %InvalidExpression{message: "response not set" <> _}} =
                Traversal.fetch_value("$statusCode", rev_path, ctx)
     end
 
@@ -325,8 +327,9 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      ctx =
-        Context.put_step_response(ctx, "createAndRetrieveBook", "createBookStep", %Req.Response{})
+      path = ["createAndRetrieveBook", "createBookStep"]
+
+      ctx = Context.put_step_request_response(ctx, path, %Req.Request{}, %Req.Response{})
 
       assert {:error, %InvalidExpression{message: "header limit missing" <> _}} =
                Traversal.fetch_value("$response.header.Limit", rev_path, ctx)

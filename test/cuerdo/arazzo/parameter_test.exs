@@ -65,7 +65,7 @@ defmodule Cuerdo.Arazzo.ParameterTest do
       assert {:error,
               %InvalidExpression{
                 expression: "$statusCode",
-                message: "request not set in workflows.0.steps.0"
+                message: "response not set for createAndRetrieveBook.createBookStep"
               }} =
                Parameter.resolve(parameters, path, ctx)
     end

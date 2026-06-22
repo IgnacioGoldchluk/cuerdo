@@ -61,13 +61,7 @@ defmodule Cuerdo.Arazzo.ContextTest do
 
       assert ctx.inputs == %{"createAndRetrieveBook" => %{}}
 
-      assert ctx.api_calls == %{
-               "createAndRetrieveBook" => %{
-                 "createBookStep" => %Context.APICalls{request: nil, response: nil},
-                 "getBookStep" => %Context.APICalls{request: nil, response: nil},
-                 "listBooksStep" => %Context.APICalls{request: nil, response: nil}
-               }
-             }
+      assert ctx.api_calls == []
     end
 
     @tag skip: "Test as part of a workflow instead"
