@@ -33,6 +33,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
 
   def run_all(workflow_id, arazzo_document, opts) do
     print_start_workflow(workflow_id)
+
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
          {:ok, workflow} <- Arazzo.Document.fetch_workflow(ctx.document, workflow_id),
@@ -91,7 +92,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   defp run_workflow(workflow_inputs, workflow_id, ctx) do
     :timer.tc(fn -> Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) end, :millisecond)
   end
-# ./cuerdo test/support/arazzo.yaml --num-runs=1 --report-output json --report-file asd.json
+
   defp generator(schema, workflow_id, opts) do
     base = RockSolid.from_schema(schema, resolver: opts[:json_schema_resolver])
 
