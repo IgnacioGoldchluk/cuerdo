@@ -50,7 +50,7 @@ defmodule Cuerdo.MixProject do
       {:nimble_options, "~> 1.0"},
       {:burrito, "~> 1.0"},
       {:table_rex, "~> 4.1.0"},
-      {:plug, "~> 1.0", only: :test},
+      {:plug, "~> 1.0"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       # YAML syntax highlighting in exdoc
