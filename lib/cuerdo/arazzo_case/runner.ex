@@ -3,6 +3,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   alias Cuerdo.Arazzo
   alias Cuerdo.Arazzo.Context
   alias Cuerdo.ArazzoCase.Result
+  alias Cuerdo.HAR
 
   require Logger
 
@@ -45,6 +46,8 @@ defmodule Cuerdo.ArazzoCase.Runner do
       |> Enum.reduce_while({[], ctx}, fn {workflow_inputs, idx}, {results, ctx} ->
         Logger.debug("#{workflow_id} #{idx}/#{num_runs}")
 
+        Context.clear_api_calls(ctx)
+
         case run_workflow(workflow_inputs, workflow_id, ctx) do
           {time_ms, {:ok, updated_ctx}} ->
             result = %Result{
@@ -63,7 +66,8 @@ defmodule Cuerdo.ArazzoCase.Runner do
               inputs: workflow_inputs,
               execution_time_ms: time_ms,
               status: :failed,
-              reason: exc
+              reason: exc,
+              logs: HAR.to_har(exc.api_calls)
             }
 
             Logger.debug(Result.format_message(result), ansi_color: :red)

@@ -76,7 +76,8 @@ defmodule Cuerdo.Arazzo do
           {:cont, {:ok, new_ctx}}
 
         {:error, e} when is_exception(e) ->
-          {:halt, {:error, ExecutionError.wrap(e, step_execution_path)}}
+          api_calls = Context.api_calls(ctx)
+          {:halt, {:error, ExecutionError.wrap(e, step_execution_path, api_calls)}}
       end
     end)
   end
@@ -91,21 +92,9 @@ defmodule Cuerdo.Arazzo do
     workflow = Enum.fetch!(ctx.document.workflows, workflow_idx)
     workflow_id = workflow.workflowId
 
-    %Step{
-      stepId: step_id,
-      parameters: step_parameters,
-      requestBody: request_body,
-      successCriteria: success_criteria
-    } = step
+    %Step{stepId: step_id, successCriteria: success_criteria} = step
 
-    with {:ok, operation, ctx} <- OpenAPI.Operation.fetch(step, ctx),
-         {:ok, base_url} <- Request.fetch_base_url(operation.source_description_name, ctx),
-         {:ok, parameters} <-
-           Parameter.resolve(step_parameters ++ workflow_parameters, rev_path, ctx),
-         {:ok, request_body} <- RequestBody.resolve(request_body, rev_path, ctx),
-         :ok <- RequestBody.matches(request_body, operation, ctx),
-         :ok <- Parameter.all_present(parameters, operation.parameters),
-         request = Step.build_request(base_url, parameters, request_body, operation, step.timeout),
+    with {:ok, request, operation, ctx} <- build_request(step, workflow_parameters, rev_path, ctx),
          {request, %Req.Response{} = response} <- Req.Request.run_request(request),
          ctx_req_resp = put_request_response_step(ctx, execution_path, request, response),
          {:ok, new_ctx} <- update_step_outputs(ctx_req_resp, workflow_id, step_id, rev_path),
@@ -265,5 +254,20 @@ defmodule Cuerdo.Arazzo do
     |> Map.put("components", %{})
     |> put_in(["components", "inputs"], Document.component_inputs(ctx.document))
     |> RuntimeExpression.resolve([], ctx)
+  end
+
+  defp build_request(step, workflow_parameters, rev_path, %Context{} = ctx) do
+    %Step{parameters: step_parameters, requestBody: request_body} = step
+
+    with {:ok, operation, ctx} <- OpenAPI.Operation.fetch(step, ctx),
+         {:ok, base_url} <- Request.fetch_base_url(operation.source_description_name, ctx),
+         {:ok, parameters} <-
+           Parameter.resolve(step_parameters ++ workflow_parameters, rev_path, ctx),
+         {:ok, request_body} <- RequestBody.resolve(request_body, rev_path, ctx),
+         :ok <- RequestBody.matches(request_body, operation, ctx),
+         :ok <- Parameter.all_present(parameters, operation.parameters) do
+      request = Step.build_request(base_url, parameters, request_body, operation, step.timeout)
+      {:ok, request, operation, ctx}
+    end
   end
 end

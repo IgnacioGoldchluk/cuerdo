@@ -15,8 +15,9 @@ defmodule Cuerdo.Arazzo.Context do
     # Workflow outputs in the form of
     # %{workflowId => %{outputKey => outputValue, steps: %{stepId => output}}}
     :outputs,
-    # List of API request/response calls with their
+    # List of API request/response calls
     :api_calls,
+    :api_calls_global_ref,
     # Resolver module for building and validating JSV schemas
     :resolver,
     # Cached remotely fetched Arazzo files and sourceDescriptions. Either a ref to an ets
@@ -48,6 +49,7 @@ defmodule Cuerdo.Arazzo.Context do
            inputs: empty_inputs(document),
            outputs: empty_outputs(document),
            api_calls: [],
+           api_calls_global_ref: empty_api_calls(),
            resolver: Keyword.fetch!(opts, :resolver),
            cache: create_cache(Keyword.fetch!(opts, :init_cache?))
          }}
@@ -86,6 +88,7 @@ defmodule Cuerdo.Arazzo.Context do
          inputs: empty_inputs(document),
          outputs: empty_outputs(document),
          api_calls: [],
+         api_calls_global_ref: empty_api_calls(),
          resolver: Keyword.fetch!(opts, :resolver),
          cache: create_cache(Keyword.get(opts, :init_cache?, false))
        }}
@@ -234,12 +237,13 @@ defmodule Cuerdo.Arazzo.Context do
 
   @doc false
   def put_step_request_response(
-        %__MODULE__{api_calls: api_calls} = ctx,
+        %__MODULE__{api_calls: api_calls, api_calls_global_ref: api_calls_agent} = ctx,
         execution_path,
         %Req.Request{} = request,
         %Req.Response{} = response
       ) do
     api_call = APICalls.new!(%{path: execution_path, request: request, response: response})
+    APICalls.WorkflowStorage.store(api_calls_agent, api_call)
 
     %__MODULE__{ctx | api_calls: [api_call | api_calls]}
   end
@@ -312,11 +316,28 @@ defmodule Cuerdo.Arazzo.Context do
     opts = [resolver: ctx.resolver]
 
     case from_document(document, opts) do
-      {:ok, %__MODULE__{} = new_ctx} -> {:ok, transfer_cache(new_ctx, ctx)}
-      {:error, exc} = error when is_exception(exc) -> error
+      {:ok, %__MODULE__{} = new_ctx} ->
+        {:ok,
+         transfer_cache(new_ctx, ctx) |> Map.put(:api_calls_global_ref, ctx.api_calls_global_ref)}
+
+      {:error, exc} = error when is_exception(exc) ->
+        error
     end
   end
 
   defp create_cache(false), do: nil
   defp create_cache(true), do: Cache.create()
+
+  defp empty_api_calls do
+    {:ok, pid} = APICalls.WorkflowStorage.start_link()
+    pid
+  end
+
+  def api_calls(%__MODULE__{api_calls_global_ref: agent_pid}) do
+    APICalls.WorkflowStorage.get_all(agent_pid)
+  end
+
+  def clear_api_calls(%__MODULE__{api_calls_global_ref: agent_pid}) do
+    APICalls.WorkflowStorage.clear(agent_pid)
+  end
 end

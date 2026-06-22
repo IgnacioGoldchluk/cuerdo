@@ -148,6 +148,7 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       assert r2_ser["reason"] == Exception.message(r2.reason)
       assert r2_ser["status"] == "failed"
+      assert length(r2_ser["logs"]["entries"]) == 1
     end
   end
 end

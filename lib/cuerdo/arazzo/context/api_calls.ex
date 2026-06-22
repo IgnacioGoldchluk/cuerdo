@@ -8,4 +8,6 @@ defmodule Cuerdo.Arazzo.Context.APICalls do
       request: Zoi.struct(Req.Request),
       response: Zoi.struct(Req.Response)
     }
+
+  @type t :: %__MODULE__{path: [String.t()], request: Req.Request.t(), response: Req.Response.t()}
 end

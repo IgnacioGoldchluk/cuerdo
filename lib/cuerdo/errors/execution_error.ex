@@ -9,10 +9,17 @@ defmodule Cuerdo.Errors.ExecutionError do
     it has the form `[workflowId, stepId]`. If the step references another workflow
     and a step fails within the referenced workflow then it is of the form
     `[mainWorkflowId, mainStepId, referencedWorkflowId, failedStepId]` and so on
+    - `:api_calls` - The list of API calls for the entire workflow in order
   """
-  defexception [:path, :error]
+  defexception [:path, :error, :api_calls]
 
-  @type t :: %__MODULE__{path: [String.t()], error: Exception.t()}
+  alias Cuerdo.Arazzo.Context.APICalls
+
+  @type t :: %__MODULE__{
+          path: [String.t()],
+          error: Exception.t(),
+          api_calls: nil | [APICalls.t()]
+        }
 
   @impl true
   def message(%{path: path, error: error}) do
@@ -27,5 +34,16 @@ defmodule Cuerdo.Errors.ExecutionError do
 
   def wrap(error, execution_path) when is_exception(error) do
     %__MODULE__{path: execution_path, error: error}
+  end
+
+  @doc false
+  def wrap(error, execution_path, api_calls)
+
+  def wrap(%__MODULE__{} = error, _, api_calls) do
+    %__MODULE__{error | api_calls: api_calls}
+  end
+
+  def wrap(error, execution_path, api_calls) do
+    %__MODULE__{path: execution_path, error: error, api_calls: api_calls}
   end
 end
