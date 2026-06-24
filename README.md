@@ -11,17 +11,6 @@
 
 ![Running an Arazzo Document](https://raw.githubusercontent.com/IgnacioGoldchluk/cuerdo/main/img/demo.gif)
 
-## Installation
-Add `:cuerdo` to the list of dependencies in `mix.exs`
-
-```elixir
-def deps do
-  [
-    {:cuerdo, "~> 0.1"}
-  ]
-end
-```
-
 ## Features
 - Arazzo workflow execution directly in Elixir.
 - Property-based test generation from Arazzo document.
@@ -44,6 +33,16 @@ docker run --rm -v "$PWD:/documents" -w /documents igsomething/cuerdo test/suppo
 
 
 ### From Elixir
+Add `:cuerdo` to the list of dependencies in `mix.exs`
+
+```elixir
+def deps do
+  [
+    {:cuerdo, "~> 0.1"}
+  ]
+end
+```
+
 Execute workflows with automatically generated input as part of your test suite
 ```elixir
 defmodule MyTest do
