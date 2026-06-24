@@ -3,13 +3,15 @@
 [![Version](https://img.shields.io/hexpm/v/cuerdo.svg)](https://hex.pm/packages/cuerdo)
 [![Docs](https://img.shields.io/badge/documentation-gray.svg)](https://cuerdo.hexdocs.pm)
 
-**Still in alpha**. Expect rough edges, cryptic error messages and generally unpolished experience.
+> [!IMPORTANT]
+> This project is still in alpha/experimental stage. Bug reports and contributions are more than welcome
 
 # Cuerdo
 > **Transform Arazzo documents into executable property-based tests.**
 
-## Installation
+![Running an Arazzo Document](https://raw.githubusercontent.com/IgnacioGoldchluk/cuerdo/main/img/demo.gif)
 
+## Installation
 Add `:cuerdo` to the list of dependencies in `mix.exs`
 
 ```elixir
@@ -27,6 +29,21 @@ end
 - Customizable input generation, when domain-specific constraints cannot be expressed in JSON Schema.
 
 ## Quick Start
+
+### Executable (recommended)
+Download the executable from the [releases](https://github.com/IgnacioGoldchluk/cuerdo/releases) page (no Elixir/Erlang required), and run it as
+```sh
+./cuerdo_linux_amd64 path/to/arazzo.yaml
+```
+
+### Dockerfile
+Run `cuerdo` from a Docker image. Keep in mind you need to mount the local files.
+```sh
+docker run --rm -v "$PWD:/documents" -w /documents igsomething/cuerdo test/support/arazzo.yaml
+```
+
+
+### From Elixir
 Execute workflows with automatically generated input as part of your test suite
 ```elixir
 defmodule MyTest do

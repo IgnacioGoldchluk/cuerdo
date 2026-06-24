@@ -90,7 +90,7 @@ defmodule Cuerdo.Arazzo.Context do
          api_calls: [],
          api_calls_global_ref: empty_api_calls(),
          resolver: Keyword.fetch!(opts, :resolver),
-         cache: create_cache(Keyword.get(opts, :init_cache?, false))
+         cache: create_cache(Keyword.get(opts, :init_cache?, true))
        }}
     else
       {:error, errors} when is_list(errors) -> {:error, %InvalidDocument{errors: errors}}
@@ -125,31 +125,33 @@ defmodule Cuerdo.Arazzo.Context do
     Map.put(to, :cache, cache)
   end
 
-  defp resolve_source_description(%__MODULE__{cache: cache} = context, %{url: url})
-       when is_map_key(cache, url) do
-    {:ok, context}
-  end
+  defp resolve_source_description(
+         %__MODULE__{cache: cache} = context,
+         %SourceDescription{url: url, name: name} = source_description
+       ) do
+    case Cache.get(cache, url) do
+      nil ->
+        case context.client.fetch_schema(url) do
+          {:ok, schema} when is_map(schema) ->
+            schema =
+              case source_description.type do
+                "arazzo" -> Document.resolve_self(schema, url)
+                _ -> schema
+              end
 
-  defp resolve_source_description(context, %SourceDescription{} = source_description) do
-    %{name: name, url: url} = source_description
+            ctx =
+              context
+              |> put_source_description(name, schema)
+              |> maybe_store_in_cache(url, schema)
 
-    case context.client.fetch_schema(url) do
-      {:ok, schema} when is_map(schema) ->
-        schema =
-          case source_description.type do
-            "arazzo" -> Document.resolve_self(schema, url)
-            _ -> schema
-          end
+            {:ok, ctx}
 
-        ctx =
-          context
-          |> put_source_description(name, schema)
-          |> maybe_store_in_cache(url, schema)
+          {:error, _} = error ->
+            error
+        end
 
-        {:ok, ctx}
-
-      {:error, _} = error ->
-        error
+      schema ->
+        {:ok, context |> put_source_description(name, schema)}
     end
   end
 
@@ -304,7 +306,7 @@ defmodule Cuerdo.Arazzo.Context do
   defp context_opts do
     [
       resolver: [type: :atom, default: Cuerdo.Resolver],
-      init_cache?: [type: :boolean, default: false]
+      init_cache?: [type: :boolean, default: true]
     ]
   end
 

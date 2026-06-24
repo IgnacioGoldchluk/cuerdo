@@ -3,7 +3,7 @@ name: Publish to Hex
 on:
   push:
     tags:
-      - "release-*"
+      - "v*"
 
 jobs:
   release:

@@ -17,4 +17,15 @@ defmodule Cuerdo.Arazzo.Context.Cache do
   def store(ets_ref, url, schema) when is_reference(ets_ref) and is_binary(url) do
     :ets.insert(ets_ref, {url, schema})
   end
+
+  @doc """
+  Retrieves the OpenAPI schema or Arazzo document from the cache
+  """
+  @spec get(reference(), String.t()) :: map() | nil
+  def get(ets_ref, url) when is_reference(ets_ref) and is_binary(url) do
+    case :ets.lookup(ets_ref, url) do
+      [{^url, schema}] -> schema
+      [] -> nil
+    end
+  end
 end

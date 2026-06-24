@@ -36,12 +36,14 @@ defmodule Cuerdo.CLI do
   def main(args) do
     case run(args) do
       {:error, _} ->
+        Logger.flush()
         System.halt(1)
 
       {:ok, results} when is_list(results) ->
         status =
           if(Enum.reject(results, &(&1.status == :passed)) |> Enum.empty?(), do: 0, else: 1)
 
+        Logger.flush()
         System.halt(status)
     end
   end

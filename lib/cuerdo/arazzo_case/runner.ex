@@ -114,7 +114,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   defp print_result(status) do
     if Application.get_env(:cuerdo, :stdio_enabled, true) do
       case status do
-        :passed -> IO.write(IO.ANSI.format([:green, "P"]))
+        :passed -> IO.write(IO.ANSI.format([:green, "."]))
         :failed -> IO.write(IO.ANSI.format([:red, "F"]))
         :error -> IO.write(IO.ANSI.format([:red, "E"]))
       end
