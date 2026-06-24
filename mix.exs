@@ -120,11 +120,11 @@ defmodule Cuerdo.MixProject do
         steps: [:assemble, &Burrito.wrap/1],
         burrito: [
           targets: [
-            # Linux right now for debugging, no need to compile everything
-            # macos: [os: :darwin, cpu: :x86_64],
-            # macos_silicon: [os: :darwin, cpu: :aarch64],
-            linux: [os: :linux, cpu: :x86_64]
-            # windows: [os: :windows, cpu: :x86_64]
+            darwin_amd64: [os: :darwin, cpu: :x86_64],
+            darwin_arm64: [os: :darwin, cpu: :aarch64],
+            linux_arm64: [os: :linux, cpu: :aarch64],
+            linux_amd64: [os: :linux, cpu: :x86_64],
+            windows_amd64: [os: :windows, cpu: :x86_64]
           ]
         ]
       ]

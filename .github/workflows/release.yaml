@@ -1,0 +1,71 @@
+name: Build and publish release artifacts to Github
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  MIX_ENV: prod
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
+    name: Build executables
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - uses: erlef/setup-beam@v1
+        name: Install Erlang and Elixir
+        id: setup-beam
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - uses: mlugg/setup-zig@v2
+        name: Install Zig
+        with:
+          version: 0.15.2
+
+      - name: Cache deps
+        id: cache-deps
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ env.cache-name }}-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Check code format
+        run: mix format --check-formatted
+
+      - name: Compiles without warnings
+        run: mix compile --warnings-as-errors
+
+      - name: Build Burrito Release
+        run: mix release
+
+      - name: Create Checksum
+        run: |
+          cd ./burrito_out
+          chmod +x ./*
+          shasum -a 256 ./* > cuerdo_checksums.txt
+          cd ..
+      - name: Upload to release
+        env:
+          # Assuming we always generate the release on tag push
+          TAG_NAME: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${TAG_NAME}" ./burrito_out/*
