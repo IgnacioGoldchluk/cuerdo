@@ -66,6 +66,6 @@ jobs:
         env:
           # Assuming we always generate the release on tag push
           TAG_NAME: ${{ github.ref_name }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
         run: |
           gh release create "${TAG_NAME}" ./burrito_out/*

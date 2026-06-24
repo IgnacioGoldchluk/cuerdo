@@ -75,6 +75,7 @@ defmodule Cuerdo.MixProject do
           Cuerdo.Arazzo,
           Cuerdo.ArazzoCase,
           Cuerdo.Arazzo.Context,
+          Cuerdo.Arazzo.Context.APICalls,
           Cuerdo.Errors.ExecutionError,
           Cuerdo.CLI
         ]
@@ -90,7 +91,7 @@ defmodule Cuerdo.MixProject do
 
   defp groups_for_modules do
     [
-      Arazzo: [Cuerdo.Arazzo, Cuerdo.Arazzo.Context],
+      Arazzo: [Cuerdo.Arazzo, Cuerdo.Arazzo.Context, Cuerdo.Arazzo.Context.APICalls],
       ArazzoCase: [Cuerdo.ArazzoCase],
       CLI: [Cuerdo.CLI],
       Exceptions: [Cuerdo.Errors.ExecutionError]

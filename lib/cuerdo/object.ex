@@ -43,6 +43,7 @@ defmodule Cuerdo.Object do
       defstruct Zoi.Struct.struct_fields(@schema)
 
       @spec schema :: Zoi.schema()
+      @doc false
       def schema do
         Enum.reduce(__MODULE__.validations(), @schema, fn validation, schema ->
           Zoi.refine(schema, Function.capture(__MODULE__, validation, 1))
@@ -54,8 +55,10 @@ defmodule Cuerdo.Object do
         end)
       end
 
+      @doc false
       def new(attrs), do: Zoi.parse(schema(), attrs)
 
+      @doc false
       def new!(attrs) do
         case new(attrs) do
           {:ok, object} -> object
@@ -63,7 +66,9 @@ defmodule Cuerdo.Object do
         end
       end
 
+      @doc false
       def validations, do: []
+      @doc false
       def transformations, do: []
       defoverridable validations: 0, transformations: 0
     end

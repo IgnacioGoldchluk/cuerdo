@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 - breaking: Replace `max_runs` for `num_runs` and `halt_on_error` options in `arazzo_document_test`
-- feat: `Cuerdo.Arazzo.run_workflow/4`, receiving a document and the `Context` build arguments
+- feat: `Cuerdo.Arazzo.run_workflow/4` accepts a document and the `Context` build arguments
 
 ## 0.2.2 [2026-06-14]
 - feat: Validate `workflow_inputs` argument matches `inputs` JSON schema
