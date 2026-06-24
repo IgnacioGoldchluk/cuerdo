@@ -12,10 +12,11 @@
 ![Running an Arazzo Document](https://raw.githubusercontent.com/IgnacioGoldchluk/cuerdo/main/img/demo.gif)
 
 ## Features
-- Arazzo workflow execution directly in Elixir.
-- Property-based test generation from Arazzo document.
+- Property-based test generation from Arazzo documents.
 - Request and response validation against OpenAPI specifications.
-- Customizable input generation, when domain-specific constraints cannot be expressed in JSON Schema.
+- Request/resposne logging in [HAR-like](http://www.softwareishard.com/blog/har-12-spec/) format for easy debugging and toubleshooting.
+- Customizable input generation when domain-specific constraints cannot be expressed in JSON Schema.
+- Compatible with latest Arazzo (1.1) specification.
 
 ## Quick Start
 
