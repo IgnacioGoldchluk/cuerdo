@@ -14,7 +14,7 @@
 ## Features
 - Property-based test generation from Arazzo documents.
 - Request and response validation against OpenAPI specifications.
-- Request/resposne logging in [HAR-like](http://www.softwareishard.com/blog/har-12-spec/) format for easy debugging and toubleshooting.
+- Request/response logging in [HAR-like](http://www.softwareishard.com/blog/har-12-spec/) format for easy debugging and toubleshooting.
 - Customizable input generation when domain-specific constraints cannot be expressed in JSON Schema.
 - Compatible with latest Arazzo (1.1) specification.
 
