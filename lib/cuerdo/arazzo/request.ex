@@ -22,7 +22,7 @@ defmodule Cuerdo.Arazzo.Request do
     # We can ignore the updated context since we fetched the operation already
     case Context.fetch_source_description(context, source_description_name) do
       {:ok, %{"servers" => [%{"url" => url} | _]}, _updated_ctx} ->
-        # Grab the first URL, if it's relative then inclue the base URL too
+        # Grab the first URL, if it's relative then include the base URL too
         url = URI.parse(url)
         if(relative?(url), do: %URI{source_description_uri | path: url.path}, else: url)
 

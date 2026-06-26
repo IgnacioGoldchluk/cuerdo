@@ -3,7 +3,7 @@ defmodule Cuerdo.ArazzoCase do
   Provides an `ExUnit.CaseTemplate` for automatically generating tests from Arazzo workflows.
 
   Each workflow in the document is executed as a test, with automatically generated inputs derived
-  from the workfow's input schema.
+  from the workflow's input schema.
 
   ## Basic Usage
   Define `use Cuerdo.ArazzoCase` in your test module, and add `arazzo_document_test` macro
@@ -71,7 +71,7 @@ defmodule Cuerdo.ArazzoCase do
   ```
 
   Define a transformation function that replaces the generated ISBN with a valid one. Notice
-  that the fuction **must** return a `t:StreamData.t/1` generator:
+  that the function **must** return a `t:StreamData.t/1` generator:
   ```elixir
   def with_valid_isbn(book) do
     StreamData.bind(valid_isbn(), fn isbn ->
@@ -80,9 +80,9 @@ defmodule Cuerdo.ArazzoCase do
   end
   ```
 
-  Pass the transformaion function through `:transform_inputs` option, as an MFA tuple.
+  Pass the transformation function through `:transform_inputs` option, as an MFA tuple.
   The function will be called for every input generated for the specified workflow, before
-  starting to execut the first workflow step:
+  starting to execute the first workflow step:
   ```elixir
   defmodule MyModuleTest do
     use Cuerdo.ArazzoCase

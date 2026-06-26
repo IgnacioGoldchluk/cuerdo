@@ -12,7 +12,7 @@ Same commands as most Elixir projects:
 
 ## Bug Reports
 1. Provide a minimal reproducible case, if the failing case includes an Arazzo/OpenAPI/AsyncAPI document (when applicable) then better.
-2. Specify the current and expected behavior, including the section of the Arazzo/OpenAPI/AsyncAPI specification that states the expcted behavior.
+2. Specify the current and expected behavior, including the section of the Arazzo/OpenAPI/AsyncAPI specification that states the expected behavior.
 3. List the Elixir, Erlang and Operating System versions if you consider them relevant.
 
 ## Feature Requests

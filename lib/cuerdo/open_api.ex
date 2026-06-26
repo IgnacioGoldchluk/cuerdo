@@ -22,7 +22,7 @@ defmodule Cuerdo.OpenAPI do
   end
 
   @doc """
-  Retuns the `Cuerdo.OpenAPI.Operation` at the given path in the schema.
+  Returns the `Cuerdo.OpenAPI.Operation` at the given path in the schema.
   """
   @spec fetch_operation_by_path(String.t(), any(), String.t()) ::
           {:ok, OpenAPI.Operation.t()} | {:error, any()}
@@ -104,7 +104,7 @@ defmodule Cuerdo.OpenAPI do
   end
 
   defp merge_parameters(priority_parameters, overridable_parameters) do
-    # Enum.uniq_by keeps the first ocurrence, we can place the priority parameters first.
+    # Enum.uniq_by keeps the first occurrence, we can place the priority parameters first.
     # Also "parameters" are unique by name + in fields
     Enum.uniq_by(
       priority_parameters ++ overridable_parameters,

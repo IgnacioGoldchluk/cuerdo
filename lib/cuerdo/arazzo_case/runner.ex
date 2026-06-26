@@ -10,7 +10,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   @doc """
   Returns the workflow ids to execute.
 
-  If the final list contains a workfow that does not exist then returns an argument error
+  If the final list contains a workflow that does not exist then returns an argument error
   """
   @spec workflow_ids(Arazzo.Document.t(), [String.t()] | nil, [String.t()] | nil) ::
           {:ok, [String.t()]} | {:error, Exception.t()}

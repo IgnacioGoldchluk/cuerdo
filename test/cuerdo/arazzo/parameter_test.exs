@@ -8,7 +8,7 @@ defmodule Cuerdo.Arazzo.ParameterTest do
   import Cuerdo.ArazzoFixtures
 
   describe "resolve/3" do
-    test "resolves reusable objects with and without overriden value" do
+    test "resolves reusable objects with and without overridden value" do
       mock_openapi_fetch()
 
       document =
@@ -28,7 +28,7 @@ defmodule Cuerdo.Arazzo.ParameterTest do
       expected = %Parameter{in: "path", name: "foo", value: 2}
       assert {:ok, [expected]} == Parameter.resolve(parameters, path, ctx)
 
-      # Now with overriden value
+      # Now with overridden value
       parameters = [
         %ReusableObject{reference: "$components.parameters.fooPath", value: "$inputs.foo"}
       ]

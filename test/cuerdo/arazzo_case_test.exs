@@ -139,16 +139,16 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       [r1, r2] = result = Runner.run_all(workflow_id, document, opts)
 
-      [r1_ser, r2_ser] = result |> JSON.encode!() |> JSON.decode!()
+      [r1_serialized, r2_serialized] = result |> JSON.encode!() |> JSON.decode!()
 
-      assert r1_ser["workflow_id"] == r1.workflow_id
-      assert r1_ser["reason"] == nil
-      assert r1_ser["execution_time_ms"] == r1.execution_time_ms
-      assert r1_ser["status"] == "passed"
+      assert r1_serialized["workflow_id"] == r1.workflow_id
+      assert r1_serialized["reason"] == nil
+      assert r1_serialized["execution_time_ms"] == r1.execution_time_ms
+      assert r1_serialized["status"] == "passed"
 
-      assert r2_ser["reason"] == Exception.message(r2.reason)
-      assert r2_ser["status"] == "failed"
-      assert length(r2_ser["logs"]["entries"]) == 1
+      assert r2_serialized["reason"] == Exception.message(r2.reason)
+      assert r2_serialized["status"] == "failed"
+      assert length(r2_serialized["logs"]["entries"]) == 1
     end
   end
 end

@@ -6,7 +6,7 @@ defmodule Cuerdo.Errors.FailedCriterion do
     "criterion #{criterion} (#{type}) for #{inspect(expression)} failed"
   end
 
-  def message(%{expression: expression, criteron: criterion, type: type, value: value}) do
+  def message(%{expression: expression, criterion: criterion, type: type, value: value}) do
     "criterion #{criterion} (#{type}) for #{inspect(expression)} failed: #{inspect(value)}"
   end
 

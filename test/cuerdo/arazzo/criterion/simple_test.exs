@@ -160,7 +160,7 @@ defmodule Cuerdo.Arazzo.Criterion.SimpleTest do
       assert {:error, "unterminated single-quoted string: Name"} == Simple.parse(condition)
     end
 
-    test "retuns error for unclosed parens" do
+    test "returns error for unclosed parens" do
       condition = "($response.body#/name == 'a'"
       assert {:error, "missing closing ')'"} == Simple.parse(condition)
     end

@@ -11,8 +11,8 @@ defmodule Cuerdo.Arazzo.RuntimeExpression do
 
   @doc """
   Replaces all runtime expressions in the given JSON object. Returns a tuple `{:ok, updated}`
-  with `updated` being the input payload with all replacements applied, or `{:error, Excepton.t()}`
-  if any expresion fails to evaluate
+  with `updated` being the input payload with all replacements applied, or `{:error, Exception.t()}`
+  if any expression fails to evaluate
   """
   @spec resolve(Selector.t() | any(), Traversal.execution_path(), Context.t()) ::
           {:ok, any()} | {:error, Exception.t()}

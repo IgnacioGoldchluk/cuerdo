@@ -211,7 +211,7 @@ defmodule Cuerdo.Arazzo.Context do
   end
 
   @doc """
-  Puts a map of `%{input_name => value}` in the `worfklow_id` inputs. Returns
+  Puts a map of `%{input_name => value}` in the `workflow_id` inputs. Returns
   the updated context
   """
   @spec put_inputs(t(), String.t(), map()) :: t()

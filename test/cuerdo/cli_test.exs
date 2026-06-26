@@ -16,7 +16,7 @@ defmodule Cuerdo.CLITest do
       end)
     end
 
-    test "returns single error result on failue" do
+    test "returns single error result on failure" do
       args = [Path.join(["test", "support", "arazzo.yaml"]), "--num-runs", "1"]
 
       Req.Test.expect(Cuerdo.Resolver, &Req.Test.transport_error(&1, :econnrefused))
