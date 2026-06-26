@@ -2,6 +2,8 @@
 [![License](https://img.shields.io/hexpm/l/cuerdo)](https://github.com/IgnacioGoldchluk/cuerdo/blob/main/LICENSE.md)
 [![Version](https://img.shields.io/hexpm/v/cuerdo.svg)](https://hex.pm/packages/cuerdo)
 [![Docs](https://img.shields.io/badge/documentation-gray.svg)](https://cuerdo.hexdocs.pm)
+[![Read the blog post](https://img.shields.io/badge/read%20the%20blog%20post-gray)
+]("https://ignaciogoldchluk.com/property-based-testing-for-api-workflows/")
 
 > [!IMPORTANT]
 > This project is still in alpha/experimental stage. Bug reports and contributions are more than welcome
@@ -11,12 +13,18 @@
 
 ![Running an Arazzo Document](https://raw.githubusercontent.com/IgnacioGoldchluk/cuerdo/main/img/demo.gif)
 
+## Why Cuerdo?
+APIs are usually tested with a handful of "happy path" examples. Over time, bugs are discovered and added to the test suite manually. This process is slow, and many bugs reach production, impacting users.
+
+*Cuerdo* automatically generates hundreds or thousands of test cases from you Arazzo workflows with automatically generated inputs, validating requests and responses against OpenAPI schemas and discovering edge cases that are commonly missed by example-based testing.
+
 ## Features
-- Property-based test generation from Arazzo documents.
-- Request and response validation against OpenAPI specifications.
-- Request/response logging in [HAR-like](http://www.softwareishard.com/blog/har-12-spec/) format for easy debugging and troubleshooting.
-- Customizable input generation when domain-specific constraints cannot be expressed in JSON Schema.
-- Compatible with latest Arazzo (1.1) specification.
+- Generates hundreds or thousands of test cases for each Arazzo workflow.
+- Validates every request and response against your OpenAPI schemas.
+- Compatible with latest Arazzo 1.1 specification.
+- Supports custom input generation when domain-specific constraints cannot be expressed in JSON Schema.
+- Exports HAR-like logs for debugging and reproducing failures.
+- Available as command-line tool, Docker image and Elixir library.
 
 ## Quick Start
 
@@ -31,7 +39,6 @@ Run `cuerdo` from a Docker image. Keep in mind you need to mount the local files
 ```sh
 docker run --rm -v "$PWD:/documents" -w /documents igsomething/cuerdo test/support/arazzo.yaml
 ```
-
 
 ### From Elixir
 Add `:cuerdo` to the list of dependencies in `mix.exs`
