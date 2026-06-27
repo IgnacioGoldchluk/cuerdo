@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/hexpm/v/cuerdo.svg)](https://hex.pm/packages/cuerdo)
 [![Docs](https://img.shields.io/badge/documentation-gray.svg)](https://cuerdo.hexdocs.pm)
 [![Read the blog post](https://img.shields.io/badge/read%20the%20blog%20post-gray)
-]("https://ignaciogoldchluk.com/property-based-testing-for-api-workflows/")
+](https://ignaciogoldchluk.com/property-based-testing-for-api-workflows/)
 
 > [!IMPORTANT]
 > This project is still in alpha/experimental stage. Bug reports and contributions are more than welcome
@@ -103,5 +103,3 @@ message was published to an out-of-band broker or queue
 - `type` allows only strings. This means that JSONPath supports RFC-9535 version only,
 and JSON Pointer (RFC-6901). Non-standard and legacy JSONPath and JSONPointer
 versions are unsupported.
-
-Failing cases **do not** shrink at the moment
