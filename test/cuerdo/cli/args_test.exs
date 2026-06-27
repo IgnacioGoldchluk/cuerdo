@@ -12,39 +12,11 @@ defmodule Cuerdo.CLI.ArgsTest do
       assert parsed[:exclude] == ["id4"]
     end
 
-    test "--report-file with stdout output passes" do
-      opts = ["--report-output", "stdout", "--report-file", "log"]
+    test "--report-file passes" do
+      opts = ["--report-file", "log"]
 
       assert {:ok, parsed} = CLI.Args.parse(opts)
-      assert parsed[:report_output] == :stdout
-    end
-
-    test "missing --report-file returns error" do
-      opts = ["--report-output", "json"]
-      assert {:error, %ArgumentError{message: "--report-output=json" <> _}} = CLI.Args.parse(opts)
-    end
-
-    test "--report-output invalid returns an error" do
-      opts = ["--report-output", "xml", "--report-file", "file.xml"]
-
-      assert {:error, %NimbleOptions.ValidationError{key: :report_output, value: "xml"}} =
-               CLI.Args.parse(opts)
-    end
-
-    test "--report-output is converted to atom" do
-      opts = ["--report-output", "json", "--report-file", "file.json"]
-
-      {:ok, parsed} = CLI.Args.parse(opts)
-      assert parsed[:report_output] == :json
-
-      opts = ["--report-output", "stdout"]
-      {:ok, parsed} = CLI.Args.parse(opts)
-      assert parsed[:report_output] == :stdout
-
-      # Default case
-      opts = []
-      {:ok, parsed} = CLI.Args.parse(opts)
-      assert parsed[:report_output] == :stdout
+      assert parsed[:report_file] == "log"
     end
 
     test "parses num-runs as integer" do

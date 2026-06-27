@@ -4,15 +4,11 @@ defmodule Cuerdo.Client do
   alias Cuerdo.Arazzo.Utils
   alias Cuerdo.Errors.{InvalidFile, InvalidResponse}
 
-  require Logger
-
   @doc """
   Fetches and decodes the OpenAPI or Arazzo spec at the given URL or local path
   """
   @spec fetch_schema(String.t()) :: {:ok, map()} | {:error, any()}
   def fetch_schema(url) do
-    Logger.debug("fetching OpenAPI/Arazzo schema at #{url}")
-
     case URI.parse(url) do
       %URI{scheme: scheme} when scheme in [nil, "file"] ->
         fetch_local(url)

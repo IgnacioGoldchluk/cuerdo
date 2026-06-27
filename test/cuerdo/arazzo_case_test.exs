@@ -1,7 +1,7 @@
 defmodule Cuerdo.ArazzoCaseTest do
   use ExUnit.Case
 
-  alias Cuerdo.ArazzoCase.{Report, Result, Runner}
+  alias Cuerdo.ArazzoCase.{Result, Runner}
 
   import Cuerdo.ArazzoFixtures
 
@@ -91,40 +91,6 @@ defmodule Cuerdo.ArazzoCaseTest do
       end)
 
       %{document: people_document(with_self: true)}
-    end
-
-    test "writes result summary to stdout", %{document: document} do
-      workflow_id = "getPeople"
-
-      opts = [
-        json_schema_resolver: Cuerdo.Resolver,
-        num_runs: 3,
-        transform_inputs: %{},
-        halt_on_error: true
-      ]
-
-      result = Runner.run_all(workflow_id, document, opts)
-
-      total_time = Enum.sum_by(result, & &1.execution_time_ms)
-
-      expected_msg =
-        """
-
-        Arazzo document test suite summary
-
-        Total execution time: #{total_time}ms
-
-        +-------------+--------+-------+
-        | Workflow ID | PASSED | TOTAL |
-        +-------------+--------+-------+
-        | getPeople   | 1      | 2     |
-        +-------------+--------+-------+
-
-
-        """
-
-      assert ExUnit.CaptureIO.capture_io(fn -> Report.write(:stdout, result, nil) end) ==
-               expected_msg
     end
 
     test "%Result is JSON encoded for passing and failing results", %{document: document} do

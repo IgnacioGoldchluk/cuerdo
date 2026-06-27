@@ -116,6 +116,7 @@ defmodule Cuerdo.Arazzo.Context do
         end
 
       %SourceDescription{value: value} ->
+        Cuerdo.CLI.Screen.fetched_specification()
         {:ok, value, context}
     end
   end

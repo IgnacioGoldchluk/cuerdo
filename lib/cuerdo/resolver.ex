@@ -2,8 +2,6 @@ defmodule Cuerdo.Resolver do
   @moduledoc false
   @behaviour JSV.Resolver
 
-  require Logger
-
   @table_key :cuerdo_process_cache
 
   @to_ignore [
@@ -16,8 +14,6 @@ defmodule Cuerdo.Resolver do
   def resolve(url, _) when url in @to_ignore, do: {:error, :ignored}
 
   def resolve("file://" <> file_path, _opts) do
-    Logger.info("fetching local JSON schema at #{file_path}")
-
     case File.read(file_path) do
       {:ok, contents} -> JSON.decode(contents)
       error -> error
@@ -32,8 +28,6 @@ defmodule Cuerdo.Resolver do
   end
 
   defp fetch_schema(url) do
-    Logger.info("fetching remote JSON schema at #{url}")
-
     case do_fetch_schema(url) do
       {:ok, %Req.Response{body: body, status: status}} when is_map(body) and status < 399 ->
         store_schema(url, body)

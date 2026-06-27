@@ -2,7 +2,7 @@ defmodule Cuerdo.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/IgnacioGoldchluk/cuerdo"
-  @version "0.2.2"
+  @version "0.3.0"
 
   def project do
     [
@@ -14,7 +14,8 @@ defmodule Cuerdo.MixProject do
         tool: Mix.Tasks.Test.CoverageWithIndex,
         ignore_modules: [
           Mix.Tasks.Test.CoverageWithIndex,
-          Cuerdo.ArazzoFixtures
+          Cuerdo.ArazzoFixtures,
+          Cuerdo.CLI.Screen.Terminal
         ]
       ],
       start_permanent: Mix.env() == :prod,
@@ -49,7 +50,7 @@ defmodule Cuerdo.MixProject do
       {:stream_data, "~> 1.0"},
       {:nimble_options, "~> 1.0"},
       {:burrito, "~> 1.0"},
-      {:table_rex, "~> 4.1.0"},
+      {:owl, "~> 0.13"},
       {:plug, "~> 1.0"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

@@ -46,7 +46,7 @@ Add `:cuerdo` to the list of dependencies in `mix.exs`
 ```elixir
 def deps do
   [
-    {:cuerdo, "~> 0.1"}
+    {:cuerdo, "~> 0.3"}
   ]
 end
 ```

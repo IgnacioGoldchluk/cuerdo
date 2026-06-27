@@ -32,8 +32,6 @@ defmodule Cuerdo.ArazzoCase.Runner do
   end
 
   def run_all(workflow_id, arazzo_document, opts) do
-    print_start_workflow(workflow_id)
-
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
          {:ok, workflow} <- Arazzo.Document.fetch_workflow(ctx.document, workflow_id),
@@ -44,10 +42,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
 
       generator
       |> Enum.take(num_runs)
-      |> Enum.with_index(1)
-      |> Enum.reduce_while({[], ctx}, fn {workflow_inputs, idx}, {results, ctx} ->
-        Logger.debug("#{workflow_id} #{idx}/#{num_runs}")
-
+      |> Enum.reduce_while({[], ctx}, fn workflow_inputs, {results, ctx} ->
         Context.clear_api_calls(ctx)
 
         case run_workflow(workflow_inputs, workflow_id, ctx) do
@@ -59,7 +54,8 @@ defmodule Cuerdo.ArazzoCase.Runner do
               status: :passed
             }
 
-            print_result(:passed)
+            Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)
+
             {:cont, {[result | results], Context.transfer_cache(ctx, updated_ctx)}}
 
           {time_ms, {:error, exc}} ->
@@ -72,7 +68,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
               logs: HAR.to_har(exc.api_calls)
             }
 
-            print_result(:failed)
+            Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)
 
             new_acc = {[result | results], ctx}
             if(halt_on_error?, do: {:halt, new_acc}, else: {:cont, new_acc})
@@ -83,7 +79,6 @@ defmodule Cuerdo.ArazzoCase.Runner do
     else
       {:error, exc} when is_exception(exc) ->
         Logger.error("generating tests for #{workflow_id}: #{Exception.message(exc)}")
-        print_result(:error)
         [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
     end
   end
@@ -103,21 +98,5 @@ defmodule Cuerdo.ArazzoCase.Runner do
     |> then(&{:ok, &1})
   rescue
     exc -> {:error, exc}
-  end
-
-  defp print_start_workflow(workflow_id) do
-    if Application.get_env(:cuerdo, :stdio_enabled, true) do
-      IO.write("\n#{workflow_id}: ")
-    end
-  end
-
-  defp print_result(status) do
-    if Application.get_env(:cuerdo, :stdio_enabled, true) do
-      case status do
-        :passed -> IO.write(IO.ANSI.format([:green, "."]))
-        :failed -> IO.write(IO.ANSI.format([:red, "F"]))
-        :error -> IO.write(IO.ANSI.format([:red, "E"]))
-      end
-    end
   end
 end

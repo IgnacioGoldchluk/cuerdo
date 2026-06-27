@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 0.3.0 [2026-06-27]
+- New CLI with better workflow progress information, summary, etc.
+- Always generate HAR file
+
 ## 0.2.3 [2026-06-24]
 - breaking: Replace `max_runs` for `num_runs` and `halt_on_error` options in `arazzo_document_test`
 - feat: `Cuerdo.Arazzo.run_workflow/4` accepts a document and the `Context` build arguments
