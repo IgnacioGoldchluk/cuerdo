@@ -17,7 +17,7 @@ defmodule Cuerdo.CLITest do
     end
 
     test "returns single error result on failure" do
-      args = [Path.join(["test", "support", "arazzo.yaml"]), "--num-runs", "1"]
+      args = [Path.join(["test", "support", "arazzo.yaml"]), "--max-runs", "1"]
 
       Req.Test.expect(Cuerdo.Resolver, &Req.Test.transport_error(&1, :econnrefused))
 
@@ -29,7 +29,7 @@ defmodule Cuerdo.CLITest do
     end
 
     test "returns list of results on successful execution" do
-      args = [Path.join(["test", "support", "arazzo.yaml"]), "--num-runs", "1"]
+      args = [Path.join(["test", "support", "arazzo.yaml"]), "--max-runs", "1"]
 
       # Mock for validating the inputs
       Req.Test.expect(Cuerdo.Resolver, 1, fn conn ->

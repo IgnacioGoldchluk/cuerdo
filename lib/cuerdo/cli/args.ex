@@ -19,8 +19,8 @@ defmodule Cuerdo.CLI.Args do
 
   defp schema do
     [
-      num_runs: [type: :pos_integer, default: 20],
-      halt_on_error: [type: :boolean, default: false],
+      max_runs: [type: :pos_integer, default: 20],
+      max_shrink_steps: [type: :non_neg_integer, default: 0],
       exclude: [type: {:custom, __MODULE__, :split_ids, []}],
       only: [type: {:custom, __MODULE__, :split_ids, []}],
       report_file: [type: :string, default: "report.json"]
@@ -29,10 +29,10 @@ defmodule Cuerdo.CLI.Args do
 
   defp cli_opts do
     [
-      num_runs: :integer,
+      max_runs: :integer,
+      max_shrink_steps: :integer,
       exclude: :string,
       only: :string,
-      halt_on_error: :boolean,
       report_file: :string
     ]
   end

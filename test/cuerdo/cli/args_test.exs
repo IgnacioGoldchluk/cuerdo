@@ -19,19 +19,12 @@ defmodule Cuerdo.CLI.ArgsTest do
       assert parsed[:report_file] == "log"
     end
 
-    test "parses num-runs as integer" do
-      opts = ["--num-runs", "123"]
+    test "parses max-runs and max-shrink-steps as integers" do
+      opts = ["--max-runs", "123", "--max-shrink-steps", "456"]
 
       {:ok, parsed} = CLI.Args.parse(opts)
-      assert parsed[:num_runs] == 123
-      assert parsed[:halt_on_error] == false
-    end
-
-    test "halt-on-error is set to true when present" do
-      opts = ["--halt-on-error"]
-
-      {:ok, parsed} = CLI.Args.parse(opts)
-      assert parsed[:halt_on_error] == true
+      assert parsed[:max_runs] == 123
+      assert parsed[:max_shrink_steps] == 456
     end
 
     test "returns error when receiving unknown args" do

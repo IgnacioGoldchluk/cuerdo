@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 0.4.0 [2026-06-27]
+- Run workflows in parallel
+- Replace `num_runs` and `halt_on_error` for `max_runs` and `max_shrink_steps`
+
 ## 0.3.0 [2026-06-27]
 - New CLI with better workflow progress information, summary, etc.
 - Always generate HAR file

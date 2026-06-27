@@ -3,10 +3,11 @@ defmodule Cuerdo.CLI do
   CLI for automated test runner
 
   ## Options
-  - `--num-runs` - The number of cases to generate for each workflow
+  - `--max-runs` - Maximum number of cases to generate for each workflow
+  - `--max-shrink-steps` - Maximum number of shrinking steps to apply when a failing case
+  is found. Defaults to 0, meaning no shrinking is applied.
   - `--exclude` - Comma-separated list of workflow ids to exclude from the document
   - `--only` - Comma-separated list of workflow ids to execute from the document
-  - `--halt-on-error` (flag) - Whether to stop execution on the first failure of each workflow
   - `--report-file` - The report file destination. Defaults to `report.json`
 
   For more information on the options, refer to `Cuerdo.ArazzoCase`
@@ -60,8 +61,15 @@ defmodule Cuerdo.CLI do
            ArazzoCase.Runner.workflow_ids(parsed_doc, valid_args[:only], valid_args[:exclude]) do
       opts = Keyword.put(valid_args, :document, document)
 
-      CLI.Screen.start_workflows(workflow_ids, opts[:num_runs])
-      results = Enum.flat_map(workflow_ids, &ArazzoCase.Runner.run_all(&1, document, opts))
+      CLI.Screen.start_workflows(workflow_ids, opts[:max_runs])
+
+      results =
+        workflow_ids
+        |> Enum.map(fn workflow_id ->
+          Task.async(fn -> ArazzoCase.Runner.run_all(workflow_id, document, opts) end)
+        end)
+        |> Task.await_many(:infinity)
+        |> List.flatten()
 
       report_file = Keyword.fetch!(opts, :report_file)
       ArazzoCase.Report.write(:json, results, report_file)

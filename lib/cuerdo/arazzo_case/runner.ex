@@ -2,6 +2,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   @moduledoc false
   alias Cuerdo.Arazzo
   alias Cuerdo.Arazzo.Context
+  alias Cuerdo.ArazzoCase.Accumulator
   alias Cuerdo.ArazzoCase.Result
   alias Cuerdo.HAR
 
@@ -37,44 +38,18 @@ defmodule Cuerdo.ArazzoCase.Runner do
          {:ok, workflow} <- Arazzo.Document.fetch_workflow(ctx.document, workflow_id),
          {:ok, schema} <- Arazzo.build_schema(workflow.inputs, ctx),
          {:ok, generator} <- generator(schema, workflow_id, opts) do
-      halt_on_error? = Keyword.fetch!(opts, :halt_on_error)
-      num_runs = Keyword.fetch!(opts, :num_runs)
+      max_runs = Keyword.fetch!(opts, :max_runs)
+      max_shrink = Keyword.fetch!(opts, :max_shrink_steps)
+      seed = :os.timestamp()
 
-      generator
-      |> Enum.take(num_runs)
-      |> Enum.reduce_while({[], ctx}, fn workflow_inputs, {results, ctx} ->
-        Context.clear_api_calls(ctx)
+      check_opts = [max_runs: max_runs, max_shrinking_steps: max_shrink, initial_seed: seed]
+      {:ok, agent} = Accumulator.start_link(ctx)
 
-        case run_workflow(workflow_inputs, workflow_id, ctx) do
-          {time_ms, {:ok, updated_ctx}} ->
-            result = %Result{
-              workflow_id: workflow_id,
-              inputs: workflow_inputs,
-              execution_time_ms: time_ms,
-              status: :passed
-            }
-
-            Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)
-
-            {:cont, {[result | results], Context.transfer_cache(ctx, updated_ctx)}}
-
-          {time_ms, {:error, exc}} ->
-            result = %Result{
-              workflow_id: workflow_id,
-              inputs: workflow_inputs,
-              execution_time_ms: time_ms,
-              status: :failed,
-              reason: exc,
-              logs: HAR.to_har(exc.api_calls)
-            }
-
-            Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)
-
-            new_acc = {[result | results], ctx}
-            if(halt_on_error?, do: {:halt, new_acc}, else: {:cont, new_acc})
-        end
-      end)
-      |> then(&elem(&1, 0))
+      # We could do something with the :original_failure and :shrunk_failure later
+      case StreamData.check_all(generator, check_opts, &check_workflow(&1, workflow_id, agent)) do
+        {:ok, _} -> Accumulator.get_results(agent)
+        {:error, _} -> Accumulator.get_results(agent)
+      end
       |> Enum.reverse()
     else
       {:error, exc} when is_exception(exc) ->
@@ -86,6 +61,41 @@ defmodule Cuerdo.ArazzoCase.Runner do
   # Runs timed workflow
   defp run_workflow(workflow_inputs, workflow_id, ctx) do
     :timer.tc(fn -> Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) end, :millisecond)
+  end
+
+  defp check_workflow(workflow_inputs, workflow_id, agent) do
+    ctx = Accumulator.get_context(agent)
+
+    case run_workflow(workflow_inputs, workflow_id, ctx) do
+      {time_ms, {:ok, updated_ctx}} ->
+        result = %Result{
+          workflow_id: workflow_id,
+          inputs: workflow_inputs,
+          execution_time_ms: time_ms,
+          status: :passed
+        }
+
+        Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)
+        new_ctx = Context.transfer_cache(ctx, updated_ctx)
+        Accumulator.add_result(agent, result)
+        Accumulator.put_context(agent, new_ctx)
+
+        {:ok, nil}
+
+      {time_ms, {:error, exc}} ->
+        result = %Result{
+          workflow_id: workflow_id,
+          inputs: workflow_inputs,
+          execution_time_ms: time_ms,
+          status: :failed,
+          reason: exc,
+          logs: HAR.to_har(exc.api_calls)
+        }
+
+        Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)
+        Accumulator.add_result(agent, result)
+        {:error, workflow_inputs}
+    end
   end
 
   defp generator(schema, workflow_id, opts) do

@@ -32,8 +32,8 @@ defmodule Cuerdo.CLI.Screen do
   Callback when all workflows have been collected
   """
   @spec start_workflows([String.t()], pos_integer()) :: :ok
-  def start_workflows(workflow_ids, num_runs),
-    do: module().start_workflows(workflow_ids, num_runs)
+  def start_workflows(workflow_ids, max_runs),
+    do: module().start_workflows(workflow_ids, max_runs)
 
   @doc """
   Callback each time a workflow testcase is successfully completed (passed or failed)

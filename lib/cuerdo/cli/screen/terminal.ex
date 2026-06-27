@@ -2,6 +2,8 @@ defmodule Cuerdo.CLI.Screen.Terminal do
   @moduledoc false
   @behaviour Cuerdo.CLI.Screen
 
+  alias Cuerdo.ArazzoCase.Result
+
   @impl Cuerdo.CLI.Screen
   def start do
     start_document()
@@ -38,17 +40,48 @@ defmodule Cuerdo.CLI.Screen.Terminal do
   end
 
   @impl Cuerdo.CLI.Screen
-  def start_workflows(workflow_ids, num_runs)
-      when is_list(workflow_ids) and is_integer(num_runs) do
+  def start_workflows(workflow_ids, max_runs)
+      when is_list(workflow_ids) and is_integer(max_runs) do
+    num_workflows = length(workflow_ids)
+    num_tests = num_workflows * max_runs
+
+    workflow_info =
+      """
+      Collected #{num_workflows} workflows
+      Generated #{num_tests} cases
+      """
+
+    Owl.LiveScreen.add_block(:collection_info, state: workflow_info)
+
     workflow_ids
     |> pad_workflows()
-    |> Enum.map(fn {workflow_id, label} ->
-      Owl.ProgressBar.start(id: {:workflow, workflow_id}, label: label, total: num_runs)
+    |> Enum.each(fn {workflow_id, label} ->
+      Owl.ProgressBar.start(
+        id: {:workflow, workflow_id},
+        label: label,
+        total: max_runs,
+        absolute_values: true
+      )
     end)
+
+    Owl.ProgressBar.start(
+      id: :total_executed,
+      label: "\n\nExecuted cases",
+      absolute_values: true,
+      total: num_tests,
+      end_symbol: "",
+      filled_symbol: "",
+      empty_symbol: "",
+      start_symbol: "",
+      partial_symbols: []
+    )
   end
 
   @impl Cuerdo.CLI.Screen
-  def completed_workflow_testcase(id), do: Owl.ProgressBar.inc(id: {:workflow, id})
+  def completed_workflow_testcase(id) do
+    Owl.ProgressBar.inc(id: {:workflow, id})
+    Owl.ProgressBar.inc(id: :total_executed)
+  end
 
   @impl Cuerdo.CLI.Screen
   def summary(results, report_file) do
@@ -60,7 +93,20 @@ defmodule Cuerdo.CLI.Screen.Terminal do
 
     report_file =
       if failed != 0 do
-        "Failures saved to #{report_file}\n"
+        first_failure_message =
+          results
+          |> Enum.find(&(&1.status == :failed))
+          |> Result.format_message()
+          |> Owl.Data.tag(:red)
+          |> Owl.Data.to_chardata()
+
+        """
+
+        First failing case:
+        #{first_failure_message}
+
+        All failed cases stored to #{report_file}
+        """
       else
         ""
       end

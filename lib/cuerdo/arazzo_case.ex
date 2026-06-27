@@ -152,8 +152,9 @@ defmodule Cuerdo.ArazzoCase do
     - `:exclude` (`list(String.t())`) - List of `workflowId` to exclude from the document.
     If both `:only` and `:exclude` are passed then the workflows from `:only` that are not in
     `:excluded` are executed
-    - `:num_runs` (`t:pos_integer/0`) - The number of cases to run. Defaults to `1`
-    - `:halt_on_error` (`t:boolean/0`) - Whether to stop on the first failure. Defaults to `false`
+    - `:max_runs` (`t:pos_integer/0`) - The number of cases to run. Defaults to `1`
+    - `:max_shrink_steps` (`t:pos_integer/0`) - Maximum number of shrinking steps to apply.
+    Defaults to `0`
     - `:transform_inputs` - A map of `%{workflowId => transformation}`, where `transformation` is
     a function that generates `t:StreamData.t/1` based on the initially generated value, specified
     as `{Module, :function_name}`, where `:function_name` is a 1-arity function
@@ -218,8 +219,8 @@ defmodule Cuerdo.ArazzoCase do
       prefix: [type: :string, required: false],
       only: [type: {:list, :string}, required: false],
       exclude: [type: {:list, :string}, required: false],
-      num_runs: [type: :pos_integer, default: 1],
-      halt_on_error: [type: :boolean, default: false],
+      max_runs: [type: :pos_integer, default: 1],
+      max_shrink_steps: [type: :non_neg_integer, default: 0],
       transform_inputs: [type: {:map, :string, :mfa}, default: %{}],
       json_schema_resolver: [type: :any, default: DummyResolver]
     ]

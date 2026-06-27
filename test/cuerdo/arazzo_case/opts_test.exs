@@ -24,7 +24,7 @@ defmodule Cuerdo.ArazzoCase.OptsTest do
       :ok
     end
 
-    arazzo_document_test num_runs: 1,
+    arazzo_document_test max_runs: 1,
                          document: people_document(with_self: true),
                          transform_inputs: %{"getPeople" => {__MODULE__, :prefix_name, []}}
   end
@@ -44,7 +44,7 @@ defmodule Cuerdo.ArazzoCase.OptsTest do
       :ok
     end
 
-    arazzo_document_test num_runs: 1, document: people_document(with_self: true)
-    arazzo_document_test num_runs: 1, prefix: "again", document: people_document(with_self: true)
+    arazzo_document_test max_runs: 1, document: people_document(with_self: true)
+    arazzo_document_test max_runs: 1, prefix: "again", document: people_document(with_self: true)
   end
 end

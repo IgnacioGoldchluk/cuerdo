@@ -6,8 +6,8 @@ defmodule Cuerdo.ArazzoCaseTest do
   import Cuerdo.ArazzoFixtures
 
   describe "run_all/3" do
-    test "executes num_cases when halt_on_error is false" do
-      Req.Test.expect(Cuerdo.Client, 2, fn conn ->
+    test "executes single case on failure" do
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
         %{"min_age" => min_age, "name" => name} = conn.params
         min_age = String.to_integer(min_age)
 
@@ -21,13 +21,13 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       opts = [
         json_schema_resolver: Cuerdo.Resolver,
-        num_runs: 2,
+        max_runs: 2,
         transform_inputs: %{},
-        halt_on_error: false
+        max_shrink_steps: 0
       ]
 
       result = Runner.run_all(workflow_id, document, opts)
-      assert [%Result{status: :failed}, %Result{status: :failed}] = result
+      assert [%Result{status: :failed}] = result
     end
 
     test "returns result struct with failure and error cases" do
@@ -56,9 +56,9 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       opts = [
         json_schema_resolver: Cuerdo.Resolver,
-        num_runs: 3,
+        max_runs: 3,
         transform_inputs: %{},
-        halt_on_error: true
+        max_shrink_steps: 0
       ]
 
       result = Runner.run_all(workflow_id, document, opts)
@@ -80,7 +80,7 @@ defmodule Cuerdo.ArazzoCaseTest do
         ])
       end)
 
-      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+      Req.Test.expect(Cuerdo.Client, 2, fn conn ->
         %{"min_age" => min_age, "name" => name} = conn.params
         min_age = String.to_integer(min_age)
 
@@ -98,14 +98,13 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       opts = [
         json_schema_resolver: Cuerdo.Resolver,
-        num_runs: 3,
+        max_runs: 2,
         transform_inputs: %{},
-        halt_on_error: true
+        max_shrink_steps: 1
       ]
 
-      [r1, r2] = result = Runner.run_all(workflow_id, document, opts)
-
-      [r1_serialized, r2_serialized] = result |> JSON.encode!() |> JSON.decode!()
+      [r1, r2, _] = result = Runner.run_all(workflow_id, document, opts)
+      [r1_serialized, r2_serialized, _] = result |> JSON.encode!() |> JSON.decode!()
 
       assert r1_serialized["workflow_id"] == r1.workflow_id
       assert r1_serialized["reason"] == nil
@@ -114,7 +113,7 @@ defmodule Cuerdo.ArazzoCaseTest do
 
       assert r2_serialized["reason"] == Exception.message(r2.reason)
       assert r2_serialized["status"] == "failed"
-      assert length(r2_serialized["logs"]["entries"]) == 1
+      assert length(r2_serialized["logs"]["entries"]) == 2
     end
   end
 end
