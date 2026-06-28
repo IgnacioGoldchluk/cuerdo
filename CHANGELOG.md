@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
+- Visual improvements to CLI
 
 ## 0.4.0 [2026-06-27]
 - Run workflows in parallel

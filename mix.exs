@@ -43,7 +43,7 @@ defmodule Cuerdo.MixProject do
     [
       {:zoi, "~> 0.18"},
       {:yaml_elixir, "~> 2.12"},
-      {:rock_solid, "~> 0.0.10"},
+      {:rock_solid, "~> 0.0.12"},
       {:json_path, "~> 0.4"},
       {:jsv, "~> 0.19"},
       {:req, "~> 0.6"},

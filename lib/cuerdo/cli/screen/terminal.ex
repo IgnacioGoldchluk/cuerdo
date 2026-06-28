@@ -2,10 +2,20 @@ defmodule Cuerdo.CLI.Screen.Terminal do
   @moduledoc false
   @behaviour Cuerdo.CLI.Screen
 
+  use Agent
   alias Cuerdo.ArazzoCase.Result
+
+  def start_link do
+    Agent.start_link(fn -> %{workflows: %{}, documents: []} end, name: __MODULE__)
+  end
+
+  def init(_) do
+    {:ok, %{workflows: %{}, documents: []}}
+  end
 
   @impl Cuerdo.CLI.Screen
   def start do
+    start_link()
     start_document()
     start_specs()
     Owl.LiveScreen.await_render()
@@ -17,115 +27,106 @@ defmodule Cuerdo.CLI.Screen.Terminal do
   end
 
   @impl Cuerdo.CLI.Screen
-  def fetched_specification do
-    # Since this might be called multiple times. Otherwise
-    # the GenServer is terminated and the 2nd call crashes
-    Owl.Spinner.stop(id: :specs_spinner, resolution: :ok)
-  catch
-    :exit, _ -> :ok
+  def fetched_specification(url) do
+    prev_fetched = Agent.get(__MODULE__, & &1[:documents])
+    new = (prev_fetched ++ [url]) |> Enum.uniq()
+    Owl.LiveScreen.update(:openapi_specifications, new)
+    Agent.cast(__MODULE__, fn state -> Map.put(state, :documents, new) end)
   end
 
   defp start_document do
-    Owl.Spinner.start(
-      id: :document_spinner,
-      labels: [processing: "Fetching Arazzo document", ok: "Arazzo document fetched\n"]
-    )
+    processing = faint("Fetching Arazzo document")
+    ok = faint("Arazzo document fetched")
+    Owl.Spinner.start(id: :document_spinner, labels: [processing: processing, ok: ok])
   end
 
   defp start_specs do
-    Owl.Spinner.start(
-      id: :specs_spinner,
-      labels: [processing: "Fetching OpenAPI specs", ok: "OpenAPI spec fetched\n"]
-    )
+    Owl.LiveScreen.add_block(:openapi_specifications, state: [], render: &render_openapi_specs/1)
   end
 
   @impl Cuerdo.CLI.Screen
-  def start_workflows(workflow_ids, max_runs)
-      when is_list(workflow_ids) and is_integer(max_runs) do
-    num_workflows = length(workflow_ids)
-    num_tests = num_workflows * max_runs
-
-    workflow_info =
-      """
-      Collected #{num_workflows} workflows
-      Generated #{num_tests} cases
-      """
-
+  def started_workflows(workflow_ids) when is_list(workflow_ids) do
+    workflow_info = faint("Collected #{length(workflow_ids)} workflows")
     Owl.LiveScreen.add_block(:collection_info, state: workflow_info)
 
-    workflow_ids
-    |> pad_workflows()
-    |> Enum.each(fn {workflow_id, label} ->
-      Owl.ProgressBar.start(
+    Enum.each(workflow_ids, fn workflow_id ->
+      Owl.Spinner.start(
         id: {:workflow, workflow_id},
-        label: label,
-        total: max_runs,
-        absolute_values: true
+        label: yellow(workflow_id),
+        frames: [ok: green("✓ "), error: red("✗ ")]
       )
     end)
 
-    Owl.ProgressBar.start(
-      id: :total_executed,
-      label: "\n\nExecuted cases",
-      absolute_values: true,
-      total: num_tests,
-      end_symbol: "",
-      filled_symbol: "",
-      empty_symbol: "",
-      start_symbol: "",
-      partial_symbols: []
-    )
+    Agent.update(__MODULE__, fn state ->
+      Map.put(state, :workflows, Map.from_keys(workflow_ids, %{status: :running, cases: 0}))
+    end)
   end
 
   @impl Cuerdo.CLI.Screen
-  def completed_workflow_testcase(id) do
-    Owl.ProgressBar.inc(id: {:workflow, id})
-    Owl.ProgressBar.inc(id: :total_executed)
+  def completed_workflow_testcase(workflow_id) do
+    cases = Agent.get(__MODULE__, &get_in(&1, [:workflows, workflow_id, :cases])) + 1
+
+    new_label =
+      case cases do
+        1 -> yellow("#{workflow_id} · 1 case")
+        more -> yellow("#{workflow_id} · #{more} cases")
+      end
+
+    Owl.Spinner.update_label(id: {:workflow, workflow_id}, label: new_label)
+
+    Agent.cast(__MODULE__, fn state -> put_in(state, [:workflows, workflow_id, :cases], cases) end)
+  end
+
+  @impl Cuerdo.CLI.Screen
+  def completed_workflow(workflow_id, final_state) do
+    workflow_state =
+      Agent.get(__MODULE__, fn state -> get_in(state, [:workflows, workflow_id]) end)
+
+    {resolution, label} =
+      case {final_state, workflow_state[:cases]} do
+        {:passed, 1} -> {:ok, green("#{workflow_id} · 1 case")}
+        {:passed, c} -> {:ok, green("#{workflow_id} · #{c} cases")}
+        {:failed, 1} -> {:error, red("#{workflow_id} · 1 case")}
+        {:failed, c} -> {:error, red("#{workflow_id} · #{c} cases")}
+      end
+
+    Agent.cast(__MODULE__, fn state ->
+      put_in(state, [:workflows, workflow_id, :status], final_state)
+    end)
+
+    Owl.Spinner.stop(id: {:workflow, workflow_id}, resolution: resolution, label: label)
   end
 
   @impl Cuerdo.CLI.Screen
   def summary(results, report_file) do
+    # We also don't need the server for this
+    # This math might not be true with :error cases
+    total = length(results)
     passed = Enum.filter(results, &(&1.status == :passed)) |> length()
-    failed = length(results) - passed
-
-    passed_mark = Owl.Data.tag("✓", :green) |> Owl.Data.to_chardata()
-    failed_mark = Owl.Data.tag("✗", :red) |> Owl.Data.to_chardata()
-
-    report_file =
-      if failed != 0 do
-        first_failure_message =
-          results
-          |> Enum.find(&(&1.status == :failed))
-          |> Result.format_message()
-          |> Owl.Data.tag(:red)
-          |> Owl.Data.to_chardata()
-
-        """
-
-        First failing case:
-        #{first_failure_message}
-
-        All failed cases stored to #{report_file}
-        """
-      else
-        ""
-      end
-
+    failed = total - passed
     exec_time = Enum.sum_by(results, & &1.execution_time_ms)
 
-    state =
+    summary =
+      yellow("#{passed} passed · #{failed} failed · #{total} total · #{exec_time(exec_time)}")
+
+    if failed != 0 do
+      first_failed =
+        results
+        |> Enum.find(&(&1.status == :failed))
+        |> Result.format_message()
+        |> faint()
+
+      first_failed = """
+
+      Failure Detail
+      #{first_failed}
+      Report saved to #{report_file}
       """
 
-      Summary:
+      Owl.LiveScreen.add_block(:failure_summary, state: first_failed)
+    end
 
-        #{passed_mark} PASSED: #{passed}
-        #{failed_mark} FAILED: #{failed}
-
-        in #{exec_time(exec_time)}
-        #{report_file}
-      """
-
-    Owl.LiveScreen.add_block(:summary, state: state)
+    Owl.LiveScreen.add_block(:summary, state: summary)
     Owl.LiveScreen.await_render()
   end
 
@@ -136,8 +137,29 @@ defmodule Cuerdo.CLI.Screen.Terminal do
 
   defp exec_time(exec_time), do: "#{exec_time}ms"
 
-  defp pad_workflows(workflow_ids) when is_list(workflow_ids) do
-    longest = Enum.map(workflow_ids, &String.length/1) |> Enum.max()
-    Enum.map(workflow_ids, &{&1, String.pad_trailing(&1, longest)})
+  defp faint(text) when is_binary(text) do
+    Owl.Data.tag(text, [:faint]) |> Owl.Data.to_chardata()
+  end
+
+  defp yellow(text) when is_binary(text) do
+    Owl.Data.tag(text, [:yellow]) |> Owl.Data.to_chardata()
+  end
+
+  defp green(text) when is_binary(text) do
+    Owl.Data.tag(text, [:green]) |> Owl.Data.to_chardata()
+  end
+
+  defp red(text) when is_binary(text) do
+    Owl.Data.tag(text, [:red]) |> Owl.Data.to_chardata()
+  end
+
+  defp render_openapi_specs(specs_urls) when is_list(specs_urls) do
+    """
+    OpenAPI documents:
+    #{Enum.map_join(specs_urls, "\n", fn url -> faint("- #{url} - fetched") end)}
+
+    """
+    |> faint()
+    |> Owl.Data.to_chardata()
   end
 end

@@ -47,8 +47,14 @@ defmodule Cuerdo.ArazzoCase.Runner do
 
       # We could do something with the :original_failure and :shrunk_failure later
       case StreamData.check_all(generator, check_opts, &check_workflow(&1, workflow_id, agent)) do
-        {:ok, _} -> Accumulator.get_results(agent)
-        {:error, _} -> Accumulator.get_results(agent)
+        {:ok, _} ->
+          Cuerdo.CLI.Screen.completed_workflow(workflow_id, :passed)
+
+          Accumulator.get_results(agent)
+
+        {:error, _} ->
+          Cuerdo.CLI.Screen.completed_workflow(workflow_id, :failed)
+          Accumulator.get_results(agent)
       end
       |> Enum.reverse()
     else

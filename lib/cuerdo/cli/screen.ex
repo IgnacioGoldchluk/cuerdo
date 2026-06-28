@@ -6,9 +6,10 @@ defmodule Cuerdo.CLI.Screen do
 
   @callback start() :: :ok
   @callback fetched_document() :: :ok
-  @callback fetched_specification() :: :ok
-  @callback start_workflows([String.t()], pos_integer()) :: :ok
+  @callback fetched_specification(String.t()) :: :ok
+  @callback started_workflows([String.t()]) :: :ok
   @callback completed_workflow_testcase(String.t()) :: :ok
+  @callback completed_workflow(String.t(), test_result()) :: :ok
   @callback summary(list(), String.t()) :: :ok
 
   defp module, do: Application.fetch_env!(:cuerdo, :screen)
@@ -26,14 +27,13 @@ defmodule Cuerdo.CLI.Screen do
   @doc """
   Callback when the main OpenAPI specification document is fetched
   """
-  def fetched_specification, do: module().fetched_specification()
+  def fetched_specification(url), do: module().fetched_specification(url)
 
   @doc """
   Callback when all workflows have been collected
   """
-  @spec start_workflows([String.t()], pos_integer()) :: :ok
-  def start_workflows(workflow_ids, max_runs),
-    do: module().start_workflows(workflow_ids, max_runs)
+  @spec started_workflows([String.t()]) :: :ok
+  def started_workflows(workflow_ids), do: module().started_workflows(workflow_ids)
 
   @doc """
   Callback each time a workflow testcase is successfully completed (passed or failed)
@@ -41,6 +41,14 @@ defmodule Cuerdo.CLI.Screen do
   @spec completed_workflow_testcase(String.t()) :: :ok
   def completed_workflow_testcase(workflow_id) do
     module().completed_workflow_testcase(workflow_id)
+  end
+
+  @doc """
+  Callback for a final workflow execution
+  """
+  @spec completed_workflow(String.t(), test_result()) :: :ok
+  def completed_workflow(workflow_id, status) do
+    module().completed_workflow(workflow_id, status)
   end
 
   @doc """

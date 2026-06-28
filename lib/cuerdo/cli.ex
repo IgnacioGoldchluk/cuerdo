@@ -61,7 +61,7 @@ defmodule Cuerdo.CLI do
            ArazzoCase.Runner.workflow_ids(parsed_doc, valid_args[:only], valid_args[:exclude]) do
       opts = Keyword.put(valid_args, :document, document)
 
-      CLI.Screen.start_workflows(workflow_ids, opts[:max_runs])
+      CLI.Screen.started_workflows(workflow_ids)
 
       results =
         workflow_ids

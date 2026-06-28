@@ -12,10 +12,13 @@ defmodule Cuerdo.CLI.Screen.Dummy do
   def fetched_document, do: :ok
 
   @impl true
-  def fetched_specification, do: :ok
+  def fetched_specification(_), do: :ok
 
   @impl true
-  def start_workflows(_, _), do: :ok
+  def started_workflows(_), do: :ok
+
+  @impl true
+  def completed_workflow(_, _), do: :ok
 
   @impl true
   def summary(_, _), do: :ok

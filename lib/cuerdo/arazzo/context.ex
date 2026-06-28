@@ -116,7 +116,6 @@ defmodule Cuerdo.Arazzo.Context do
         end
 
       %SourceDescription{value: value} ->
-        Cuerdo.CLI.Screen.fetched_specification()
         {:ok, value, context}
     end
   end
@@ -139,6 +138,8 @@ defmodule Cuerdo.Arazzo.Context do
                 "arazzo" -> Document.resolve_self(schema, url)
                 _ -> schema
               end
+
+            Cuerdo.CLI.Screen.fetched_specification(url)
 
             ctx =
               context
