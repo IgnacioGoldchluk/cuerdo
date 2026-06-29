@@ -19,11 +19,11 @@ APIs are usually tested with a handful of "happy path" examples. Over time, bugs
 *Cuerdo* automatically generates hundreds or thousands of test cases from you Arazzo workflows with automatically generated inputs, validating requests and responses against OpenAPI schemas and discovering edge cases that are commonly missed by example-based testing.
 
 ## Features
-- Generates hundreds or thousands of test cases for each Arazzo workflow.
+- Generates hundreds or thousands of test cases for each Arazzo workflow, exploring edge cases.
 - Validates every request and response against your OpenAPI schemas.
+- Generates reproducible failures and, when a bug is discovered, shrinks towards minimal inputs/payload.
 - Compatible with latest Arazzo 1.1 specification.
-- Supports custom input generation when domain-specific constraints cannot be expressed in JSON Schema.
-- Exports HAR-like logs for debugging and reproducing failures via `replay har_report.json`.
+- Supports [custom input generation](https://cuerdo.hexdocs.pm/Cuerdo.ArazzoCase.html#module-customizing-generated-inputs) when domain-specific constraints cannot be expressed in JSON Schema.
 - Available as command-line tool, Docker image and Elixir library.
 
 ## Quick Start
@@ -46,7 +46,7 @@ Add `:cuerdo` to the list of dependencies in `mix.exs`
 ```elixir
 def deps do
   [
-    {:cuerdo, "~> 0.4"}
+    {:cuerdo, "~> 0.5"}
   ]
 end
 ```

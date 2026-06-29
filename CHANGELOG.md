@@ -3,7 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
+
+## 0.5.0 [2026-06-29]
 - Visual improvements to CLI
+- Add `replay` functionality
 
 ## 0.4.0 [2026-06-27]
 - Run workflows in parallel
