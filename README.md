@@ -23,7 +23,7 @@ APIs are usually tested with a handful of "happy path" examples. Over time, bugs
 - Validates every request and response against your OpenAPI schemas.
 - Compatible with latest Arazzo 1.1 specification.
 - Supports custom input generation when domain-specific constraints cannot be expressed in JSON Schema.
-- Exports HAR-like logs for debugging and reproducing failures.
+- Exports HAR-like logs for debugging and reproducing failures via `replay har_report.json`.
 - Available as command-line tool, Docker image and Elixir library.
 
 ## Quick Start

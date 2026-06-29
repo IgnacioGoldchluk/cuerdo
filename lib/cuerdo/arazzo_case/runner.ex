@@ -32,6 +32,26 @@ defmodule Cuerdo.ArazzoCase.Runner do
     end
   end
 
+  def replay(workflow_id, failed_inputs, document) do
+    case Context.from_document(document, resolver: Cuerdo.Resolver) do
+      {:ok, ctx} ->
+        {:ok, agent} = Accumulator.start_link(ctx)
+
+        failed_inputs
+        |> Enum.map(fn failed_input -> check_workflow(failed_input, workflow_id, agent) end)
+        |> Enum.all?(&match?({:ok, _}, &1))
+        |> case do
+          true -> Cuerdo.CLI.Screen.completed_workflow(workflow_id, :passed)
+          false -> Cuerdo.CLI.Screen.completed_workflow(workflow_id, :failed)
+        end
+
+        Accumulator.get_results(agent) |> Enum.reverse()
+
+      {:error, exc} when is_exception(exc) ->
+        [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
+    end
+  end
+
   def run_all(workflow_id, arazzo_document, opts) do
     with {:ok, %Context{} = ctx} <-
            Context.from_document(arazzo_document, resolver: opts[:json_schema_resolver]),
