@@ -7,9 +7,13 @@ defmodule Cuerdo.CLITest do
 
   import ExUnit.CaptureIO
 
+  setup_all do
+    on_exit(fn -> Application.put_env(:cuerdo, :screen, Cuerdo.CLI.Screen.Dummy) end)
+  end
+
   describe "run/1" do
     test "early return with error on invalid args" do
-      args = [Path.join(["test", "support", "arazzo.yaml"]), "--nun-runs", "1"]
+      args = [Path.join(["test", "support", "arazzo.yaml"]), "--mas-runs", "1"]
 
       capture_io(fn ->
         assert {:error, %CLI.Errors.UnexpectedArgs{}} = CLI.run(args)
@@ -17,7 +21,7 @@ defmodule Cuerdo.CLITest do
     end
 
     test "returns single error result on failure" do
-      args = [Path.join(["test", "support", "arazzo.yaml"]), "--max-runs", "1"]
+      args = [Path.join(["test", "support", "arazzo.yaml"]), "--max-runs", "1", "--ui", "none"]
 
       Req.Test.expect(Cuerdo.Resolver, &Req.Test.transport_error(&1, :econnrefused))
 
@@ -29,7 +33,7 @@ defmodule Cuerdo.CLITest do
     end
 
     test "returns list of results on successful execution" do
-      args = [Path.join(["test", "support", "arazzo.yaml"]), "--max-runs", "1"]
+      args = [Path.join(["test", "support", "arazzo.yaml"]), "--max-runs", "1", "--ui", "none"]
 
       # Mock for validating the inputs
       Req.Test.expect(Cuerdo.Resolver, 1, fn conn ->

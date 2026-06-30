@@ -23,7 +23,8 @@ defmodule Cuerdo.CLI.Args do
       max_shrink_steps: [type: :non_neg_integer, default: 0],
       exclude: [type: {:custom, __MODULE__, :split_ids, []}],
       only: [type: {:custom, __MODULE__, :split_ids, []}],
-      report_file: [type: :string, default: "report.json"]
+      report_file: [type: :string, default: "report.json"],
+      ui: [type: {:in, ["rich", "basic", "none"]}, default: "rich"]
     ]
   end
 
@@ -33,7 +34,8 @@ defmodule Cuerdo.CLI.Args do
       max_shrink_steps: :integer,
       exclude: :string,
       only: :string,
-      report_file: :string
+      report_file: :string,
+      ui: :string
     ]
   end
 

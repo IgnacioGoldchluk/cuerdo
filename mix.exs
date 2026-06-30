@@ -2,7 +2,7 @@ defmodule Cuerdo.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/IgnacioGoldchluk/cuerdo"
-  @version "0.5.0"
+  @version "0.6.0"
 
   def project do
     [
@@ -15,7 +15,8 @@ defmodule Cuerdo.MixProject do
         ignore_modules: [
           Mix.Tasks.Test.CoverageWithIndex,
           Cuerdo.ArazzoFixtures,
-          Cuerdo.CLI.Screen.Terminal
+          Cuerdo.CLI.Screen.Terminal,
+          Cuerdo.CLI.Screen.Basic
         ]
       ],
       start_permanent: Mix.env() == :prod,

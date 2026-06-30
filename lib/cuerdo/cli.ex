@@ -20,6 +20,8 @@ defmodule Cuerdo.CLI do
   - `--exclude` - Comma-separated list of workflow ids to exclude from the document
   - `--only` - Comma-separated list of workflow ids to execute from the document
   - `--report-file` - The report file destination. Defaults to `report.json`
+  - `--ui` - Terminal UI style. Either `rich` or `basic`. Use `basic` for CI workflows.
+  Defaults to `rich`
 
   The options only apply when generating tests from an Arazzo document. When running
   as `replay report.json` then all the failing inputs are exercised again, ignoring
@@ -107,9 +109,8 @@ defmodule Cuerdo.CLI do
   end
 
   def run([document_path | args]) do
-    CLI.Screen.start()
-
     with {:ok, valid_args} <- CLI.Args.parse(args),
+         _ <- CLI.Screen.start(Keyword.fetch!(valid_args, :ui)),
          {:ok, document} <- YamlElixir.read_from_file(document_path),
          _ <- CLI.Screen.fetched_document(),
          {:ok, parsed_doc} <- Arazzo.Document.new(document),

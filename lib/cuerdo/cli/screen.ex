@@ -4,6 +4,8 @@ defmodule Cuerdo.CLI.Screen do
   """
   @type test_result :: :passed | :failed | :error
 
+  alias Cuerdo.CLI.Screen
+
   @callback start() :: :ok
   @callback fetched_document() :: :ok
   @callback fetched_specification(String.t()) :: :ok
@@ -13,6 +15,15 @@ defmodule Cuerdo.CLI.Screen do
   @callback summary(list(), String.t()) :: :ok
 
   defp module, do: Application.fetch_env!(:cuerdo, :screen)
+
+  def mode("basic"), do: Screen.Basic
+  def mode("rich"), do: Screen.Terminal
+  def mode("none"), do: Screen.Dummy
+
+  def start(mode) do
+    Application.put_env(:cuerdo, :screen, mode(mode))
+    start()
+  end
 
   @doc """
   Starts the screen

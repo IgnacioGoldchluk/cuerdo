@@ -3,7 +3,9 @@ defmodule Cuerdo.CLI.Screen.Terminal do
   @behaviour Cuerdo.CLI.Screen
 
   use Agent
+
   alias Cuerdo.ArazzoCase.Result
+  alias Cuerdo.CLI.Screen
 
   def start_link do
     Agent.start_link(fn -> %{workflows: %{}, documents: []} end, name: __MODULE__)
@@ -16,6 +18,7 @@ defmodule Cuerdo.CLI.Screen.Terminal do
   @impl Cuerdo.CLI.Screen
   def start do
     start_link()
+    Owl.LiveScreen.add_block(:version, state: "Started Cuerdo #{Screen.Utils.version()}")
     start_document()
     start_specs()
     Owl.LiveScreen.await_render()
@@ -99,43 +102,28 @@ defmodule Cuerdo.CLI.Screen.Terminal do
 
   @impl Cuerdo.CLI.Screen
   def summary(results, report_file) do
-    # We also don't need the server for this
-    # This math might not be true with :error cases
-    total = length(results)
-    passed = Enum.filter(results, &(&1.status == :passed)) |> length()
-    failed = total - passed
-    exec_time = Enum.sum_by(results, & &1.execution_time_ms)
+    summary = Screen.Utils.summary(results)
 
-    summary =
-      yellow("#{passed} passed · #{failed} failed · #{total} total · #{exec_time(exec_time)}")
+    case Enum.find(results, &(&1.status == :failed)) do
+      nil ->
+        :ok
 
-    if failed != 0 do
-      first_failed =
-        results
-        |> Enum.find(&(&1.status == :failed))
-        |> Result.format_message()
-        |> faint()
+      %Result{} = result ->
+        first_failed_msg = result |> Result.format_message() |> faint()
 
-      first_failed = """
+        first_failed = """
 
-      Failure Detail
-      #{first_failed}
-      Report saved to #{report_file}
-      """
+        Failure Detail
+        #{first_failed_msg}
+        Report saved to #{report_file}
+        """
 
-      Owl.LiveScreen.add_block(:failure_summary, state: first_failed)
+        Owl.LiveScreen.add_block(:failure_summary, state: first_failed)
     end
 
     Owl.LiveScreen.add_block(:summary, state: summary)
     Owl.LiveScreen.await_render()
   end
-
-  defp exec_time(exec_time) when exec_time > 1000 do
-    in_s = (exec_time / 1000.0) |> Float.round(2)
-    "#{in_s}s"
-  end
-
-  defp exec_time(exec_time), do: "#{exec_time}ms"
 
   defp faint(text) when is_binary(text) do
     Owl.Data.tag(text, [:faint]) |> Owl.Data.to_chardata()
