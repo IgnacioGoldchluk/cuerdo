@@ -35,26 +35,36 @@ defmodule Cuerdo.Arazzo.Response do
       :ok
     else
       {:nil?, true} ->
-        {:error,
-         %UnexpectedResponse{message: "no matching response for status code #{status_code}"}}
+        {:error, %UnexpectedResponse{type: :mismatched_status_code, value: status_code}}
 
       {:content, nil} when body in ["", nil] ->
         :ok
 
       {:content, nil} ->
-        {:error,
-         %UnexpectedResponse{message: "No 'content' defined for status code #{status_code}"}}
+        {:error, %UnexpectedResponse{type: :no_content_defined, value: status_code}}
 
       {:matching_response, nil} ->
         [content_type] = Req.Response.get_header(response, "content-type")
-        {:error, %UnexpectedResponse{message: "no matching content-type for #{content_type}"}}
+        {:error, %UnexpectedResponse{type: :mismatched_content_type, value: content_type}}
 
       {:header, header} ->
-        {:error,
-         %UnexpectedResponse{message: "unexpected 'content-type' header: #{inspect(header)}"}}
+        {:error, %UnexpectedResponse{type: :malformed_content_type, value: header}}
 
-      {:error, exc} when is_exception(exc) ->
-        {:error, %UnexpectedResponse{message: Exception.message(exc)}}
+      {:error, %JSV.ValidationError{} = exc} ->
+        {:error,
+         %UnexpectedResponse{
+           type: :mismatched_response_schema,
+           value: body,
+           details: Exception.message(exc)
+         }}
+
+      {:error, %JSV.BuildError{} = exc} ->
+        {:error,
+         %UnexpectedResponse{
+           type: :invalid_response_schema,
+           value: body,
+           details: Exception.message(exc)
+         }}
     end
   end
 end

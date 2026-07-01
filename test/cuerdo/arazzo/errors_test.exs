@@ -276,10 +276,10 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
     end
 
     test "formats message for UnexpectedResponse" do
-      msg = "no matching response for status code 200"
+      msg = "Unexpected response (mismatched_status_code): 200"
 
-      assert_raise Errors.UnexpectedResponse, "Unexpected response: #{msg}", fn ->
-        raise Errors.UnexpectedResponse, message: msg
+      assert_raise Errors.UnexpectedResponse, msg, fn ->
+        raise Errors.UnexpectedResponse, type: :mismatched_status_code, value: 200
       end
     end
   end

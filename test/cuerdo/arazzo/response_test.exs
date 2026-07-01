@@ -36,14 +36,15 @@ defmodule Cuerdo.Arazzo.ResponseTest do
           "summary" => "Gets a person"
         })
 
+      response_body = %{"age" => -1, "name" => "Alice"}
+
       response =
-        Req.Response.new(status: 200, body: %{"name" => "Alice", "age" => -1})
+        Req.Response.new(status: 200, body: response_body)
         |> Req.Response.put_header("content-type", "application/json")
 
-      assert {:error, %UnexpectedResponse{message: msg}} =
+      assert {:error,
+              %UnexpectedResponse{type: :mismatched_response_schema, value: ^response_body}} =
                Response.matches(response, operation, ctx)
-
-      assert String.starts_with?(msg, "json schema validation failed")
     end
 
     test "returns error when response has content-type but operation did not define any" do
@@ -64,10 +65,8 @@ defmodule Cuerdo.Arazzo.ResponseTest do
         Req.Response.new(status: 200, body: %{"name" => "Alice", "age" => 20})
         |> Req.Response.put_header("content-type", "multipart/form-data")
 
-      assert {:error, %UnexpectedResponse{message: msg}} =
+      assert {:error, %UnexpectedResponse{type: :no_content_defined}} =
                Response.matches(response, operation, ctx)
-
-      assert msg == "No 'content' defined for status code 200"
     end
 
     test "returns error when there is no matching content-type" do
@@ -102,10 +101,9 @@ defmodule Cuerdo.Arazzo.ResponseTest do
         Req.Response.new(status: 200, body: %{"name" => "Alice", "age" => 20})
         |> Req.Response.put_header("content-type", "multipart/form-data")
 
-      assert {:error, %UnexpectedResponse{message: msg}} =
+      assert {:error,
+              %UnexpectedResponse{type: :mismatched_content_type, value: "multipart/form-data"}} =
                Response.matches(response, operation, ctx)
-
-      assert msg == "no matching content-type for multipart/form-data"
     end
 
     test "returns error when content-type header is missing from the response" do
@@ -138,10 +136,8 @@ defmodule Cuerdo.Arazzo.ResponseTest do
 
       response = Req.Response.new(status: 200, body: %{"name" => "Alice", "age" => 20})
 
-      assert {:error, %UnexpectedResponse{message: msg}} =
+      assert {:error, %UnexpectedResponse{type: :malformed_content_type}} =
                Response.matches(response, operation, ctx)
-
-      assert msg == "unexpected 'content-type' header: []"
     end
 
     test "returns error when no status code matches" do
@@ -160,10 +156,8 @@ defmodule Cuerdo.Arazzo.ResponseTest do
 
       response = Req.Response.new(status: 201)
 
-      assert {:error, %UnexpectedResponse{message: msg}} =
+      assert {:error, %UnexpectedResponse{type: :mismatched_status_code}} =
                Response.matches(response, operation, ctx)
-
-      assert msg == "no matching response for status code 201"
     end
 
     test "returns :ok when response body and expected body are empty" do
