@@ -7,7 +7,7 @@ defmodule Cuerdo.Arazzo.Workflow do
   alias Cuerdo.Arazzo
   alias Cuerdo.Arazzo.{Context, FailureAction, Output, Parameter, Step, SuccessAction}
 
-  alias Cuerdo.Errors.InvalidInputs
+  alias Cuerdo.Errors.{InvalidInputs, InvalidSchema}
 
   use Cuerdo.Object,
     schema: %{
@@ -47,6 +47,9 @@ defmodule Cuerdo.Arazzo.Workflow do
          {:ok, _} <- JSV.validate(workflow_inputs, root) do
       :ok
     else
+      {:error, %JSV.BuildError{} = exc} ->
+        {:error, %InvalidSchema{type: :invalid_inputs_schema, value: Exception.message(exc)}}
+
       {:error, %JSV.ValidationError{} = exc} ->
         {:error, %InvalidInputs{inputs: workflow_inputs, message: Exception.message(exc)}}
 

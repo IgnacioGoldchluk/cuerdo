@@ -28,7 +28,7 @@ defmodule Cuerdo.Arazzo.ReusableObject do
         )
 
       _ ->
-        {:error, %InvalidExpression{expression: ref, message: "not in document parameters"}}
+        {:error, %InvalidExpression{type: :parameter, expression: ref, value: "not in document"}}
     end
   end
 end

@@ -1,16 +1,16 @@
 defmodule Cuerdo.Errors.InvalidExpression do
-  defexception [:expression, :message]
+  defexception [:type, :expression, :value]
 
   @impl true
-  def message(%{expression: expression, message: message}) when is_binary(expression) do
-    "invalid expression: #{expression} - #{message}"
+  def message(%{type: type, expression: expression, value: value}) when is_binary(expression) do
+    "invalid #{type} expression: #{expression} - #{value}"
   end
 
-  def message(%{expression: {path, pointer}, message: message}) do
-    "invalid expression: #{path}/#{pointer} - #{message}"
+  def message(%{type: type, expression: {path, pointer}, value: value}) do
+    "invalid #{type} expression: #{path}/#{pointer} - #{value}"
   end
 
-  def message(%{expression: expression, message: message}) when is_map(expression) do
-    "invalid expression: #{inspect(expression)} - #{message}"
+  def message(%{type: type, expression: expression, value: value}) when is_map(expression) do
+    "invalid #{type} expression: #{inspect(expression)} - #{value}"
   end
 end

@@ -227,7 +227,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [123, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "invalid step index 123"}} =
+      assert {:error,
+              %InvalidExpression{
+                type: :step_index,
+                expression: "$statusCode",
+                value: "createAndRetrieveBook.steps.123"
+              }} =
                Traversal.fetch_value("$statusCode", rev_path, ctx)
     end
 
@@ -235,7 +240,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "request not set" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "createAndRetrieveBook.createBookStep",
+                type: :request,
+                value: "not set"
+              }} =
                Traversal.fetch_value("$request.body", rev_path, ctx)
     end
 
@@ -243,7 +253,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "response not set" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "$statusCode",
+                type: :response,
+                value: "createAndRetrieveBook.createBookStep request not set"
+              }} =
                Traversal.fetch_value("$statusCode", rev_path, ctx)
     end
 
@@ -251,7 +266,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 123, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "invalid workflow index 123"}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "$statusCode",
+                type: :workflow_index,
+                value: 123
+              }} =
                Traversal.fetch_value("$statusCode", rev_path, ctx)
     end
 
@@ -259,7 +279,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [123, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "invalid step index 123"}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: 123,
+                type: :step_index,
+                value: "createAndRetrieveBook.steps.123"
+              }} =
                Traversal.fetch_value("$request.body", rev_path, ctx)
     end
 
@@ -267,7 +292,11 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "Invalid sourceDescription name" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidSourceDescription{
+                name: "invalidName",
+                valid_names: ["bookStore"]
+              }} =
                Traversal.fetch_value("$sourceDescriptions.invalidName.url", rev_path, ctx)
     end
 
@@ -275,7 +304,13 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "field aaaa not in source description" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "$sourceDescriptions.bookStore.aaaa",
+                type: :field,
+                value: "not present",
+                __exception__: true
+              }} =
                Traversal.fetch_value("$sourceDescriptions.bookStore.aaaa", rev_path, ctx)
     end
 
@@ -283,15 +318,25 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 123, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "invalid workflow index 123"}} =
-               Traversal.fetch_value("$inputs.invalidInput", rev_path, ctx)
+      expected = %Cuerdo.Errors.InvalidExpression{
+        expression: "workflows.123",
+        type: :workflow_index,
+        value: 123
+      }
+
+      assert {:error, expected} == Traversal.fetch_value("$inputs.invalidInput", rev_path, ctx)
     end
 
     test "fails for missing inputs", %{document: document} do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "input invalidInput not set" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "createAndRetrieveBook.inputs.invalidInput",
+                type: :input,
+                value: "missing"
+              }} =
                Traversal.fetch_value("$inputs.invalidInput", rev_path, ctx)
     end
 
@@ -299,7 +344,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 123, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "invalid workflow index 123"}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "workflows.123",
+                type: :workflow_index,
+                value: 123
+              }} =
                Traversal.fetch_value("$outputs.invalidOutputs", rev_path, ctx)
     end
 
@@ -307,7 +357,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "no output invalidOutput in step" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "$steps.createBookStep.outputs.invalidOutput",
+                type: :output,
+                value: "missing"
+              }} =
                Traversal.fetch_value(
                  "$steps.createBookStep.outputs.invalidOutput",
                  rev_path,
@@ -319,7 +374,12 @@ defmodule Cuerdo.TraversalTest do
       {:ok, ctx} = Context.from_document(document)
       rev_path = [0, "steps", 0, "workflows"]
 
-      assert {:error, %InvalidExpression{message: "no output invalidOutput" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "createAndRetrieveBook.outputs.invalidOutput",
+                type: :output,
+                value: "missing"
+              }} =
                Traversal.fetch_value("$outputs.invalidOutput", rev_path, ctx)
     end
 
@@ -331,7 +391,12 @@ defmodule Cuerdo.TraversalTest do
 
       ctx = Context.put_step_request_response(ctx, path, %Req.Request{}, %Req.Response{})
 
-      assert {:error, %InvalidExpression{message: "header limit missing" <> _}} =
+      assert {:error,
+              %Cuerdo.Errors.InvalidExpression{
+                expression: "limit",
+                type: :header,
+                value: "Available headers: "
+              }} =
                Traversal.fetch_value("$response.header.Limit", rev_path, ctx)
     end
   end

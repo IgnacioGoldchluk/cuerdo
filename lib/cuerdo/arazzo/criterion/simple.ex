@@ -23,14 +23,15 @@ defmodule Cuerdo.Arazzo.Criterion.Simple do
         {:ok, do_evaluate(ast, rev_path, context)}
 
       {:error, e} when is_binary(e) ->
-        {:error, %InvalidExpression{expression: condition, message: e}}
+        {:error, %InvalidExpression{type: :simple, expression: condition, value: e}}
     end
   catch
     {:error, exc} when is_exception(exc) ->
-      {:error, %InvalidExpression{expression: condition, message: Exception.message(exc)}}
+      {:error,
+       %InvalidExpression{type: :simple, expression: condition, value: Exception.message(exc)}}
 
     {:error, msg} when is_binary(msg) ->
-      {:error, %InvalidExpression{expression: condition, message: msg}}
+      {:error, %InvalidExpression{type: :simple, expression: condition, value: msg}}
   end
 
   # Values

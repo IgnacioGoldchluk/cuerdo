@@ -77,7 +77,7 @@ defmodule Cuerdo.Arazzo.CriterionTest do
          %FailedCriterion{
            expression: "$response.body#/name",
            criterion: criterion.condition,
-           type: criterion.type,
+           type: :regex,
            value: "Alice"
          }}
 
@@ -127,9 +127,10 @@ defmodule Cuerdo.Arazzo.CriterionTest do
       expected =
         {:error,
          %FailedCriterion{
-           expression: response.body,
-           criterion: criterion.condition,
-           type: criterion.type
+           expression: criterion.condition,
+           criterion: criterion.context,
+           type: :jsonpath,
+           value: response.body
          }}
 
       assert expected == Criterion.evaluate(criterion, path, ctx)

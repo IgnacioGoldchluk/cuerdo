@@ -4,7 +4,7 @@ defmodule Cuerdo.Arazzo.Context do
   """
   alias Cuerdo.Arazzo.Context.{APICalls, Cache}
   alias Cuerdo.Arazzo.{Document, SourceDescription, Workflow}
-  alias Cuerdo.Errors.{InvalidDocument, InvalidSourceDescription}
+  alias Cuerdo.Errors.{InvalidDocument, InvalidExpression, InvalidSourceDescription}
 
   defstruct [
     # The fully parsed document
@@ -257,8 +257,16 @@ defmodule Cuerdo.Arazzo.Context do
     suffix = [workflow_id, step_id]
 
     case Enum.find(api_calls, fn api_call -> List.ends_with?(api_call.path, suffix) end) do
-      %APICalls{request: request} -> {:ok, request}
-      nil -> {:error, "request not set for #{workflow_id}.#{step_id}"}
+      %APICalls{request: request} ->
+        {:ok, request}
+
+      nil ->
+        {:error,
+         %InvalidExpression{
+           type: :request,
+           expression: "#{workflow_id}.#{step_id}",
+           value: "not set"
+         }}
     end
   end
 
@@ -266,8 +274,16 @@ defmodule Cuerdo.Arazzo.Context do
     suffix = [workflow_id, step_id]
 
     case Enum.find(api_calls, fn api_call -> List.ends_with?(api_call.path, suffix) end) do
-      %APICalls{response: response} -> {:ok, response}
-      nil -> {:error, "response not set for #{workflow_id}.#{step_id}"}
+      %APICalls{response: response} ->
+        {:ok, response}
+
+      nil ->
+        {:error,
+         %InvalidExpression{
+           type: :response,
+           expression: "response",
+           value: "#{workflow_id}.#{step_id} request not set"
+         }}
     end
   end
 

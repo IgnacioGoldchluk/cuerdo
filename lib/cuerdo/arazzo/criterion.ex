@@ -65,7 +65,13 @@ defmodule Cuerdo.Arazzo.Criterion do
          {:ok, result} <- JSONPath.values(expression, query) do
       case result do
         [] ->
-          {:error, %FailedCriterion{criterion: query, expression: expression, type: "jsonpath"}}
+          {:error,
+           %FailedCriterion{
+             criterion: criterion_context,
+             expression: query,
+             value: expression,
+             type: :jsonpath
+           }}
 
         r when is_list(r) ->
           :ok
@@ -91,16 +97,18 @@ defmodule Cuerdo.Arazzo.Criterion do
          %FailedCriterion{
            criterion: regex,
            expression: criterion_context,
-           type: "regex",
+           type: :regex,
            value: to_string(value)
          }}
+
+      {:error, %RockSolid.Traversal.InvalidPath{schema: schema}} ->
+        {:error, %InvalidExpression{type: :regex, expression: criterion_context, value: schema}}
 
       {:error, e} = error when is_exception(e) ->
         error
 
       val when not is_binary(val) and not is_number(val) ->
-        msg = "expression does not evaluate to a string: #{inspect(val)}"
-        {:error, %InvalidExpression{expression: criterion_context, message: msg}}
+        {:error, %InvalidExpression{type: :regex, expression: val, value: ""}}
     end
   end
 
@@ -113,7 +121,7 @@ defmodule Cuerdo.Arazzo.Criterion do
 
       {:ok, false} ->
         {:ok, value} = RuntimeExpression.resolve(condition, rev_path, ctx)
-        {:error, %FailedCriterion{type: "simple", expression: condition, value: value}}
+        {:error, %FailedCriterion{type: :simple, expression: condition, value: value}}
 
       {:error, exc} = error when is_exception(exc) ->
         error

@@ -34,14 +34,8 @@ defmodule Cuerdo.Traversal do
       end
 
     case do_fetch_value(path, reversed_path, context) do
-      {:ok, value} ->
-        {:ok, value}
-
-      {:error, message} when is_binary(message) ->
-        {:error, %InvalidExpression{expression: json_path, message: message}}
-
-      {:error, exc} when is_exception(exc) ->
-        {:error, %InvalidExpression{expression: json_path, message: Exception.message(exc)}}
+      {:ok, value} -> {:ok, value}
+      {:error, exc} when is_exception(exc) -> {:error, exc}
     end
   end
 
@@ -52,8 +46,16 @@ defmodule Cuerdo.Traversal do
          {:ok, value} <- Map.fetch(source_description, field_atom) do
       {:ok, value}
     else
-      :error -> {:error, "field #{field} not in source description #{name}"}
-      other -> other
+      :error ->
+        {:error,
+         %InvalidExpression{
+           type: :field,
+           expression: "$sourceDescriptions.#{name}.#{field}",
+           value: "not present"
+         }}
+
+      other ->
+        other
     end
   end
 
@@ -66,7 +68,13 @@ defmodule Cuerdo.Traversal do
     else
       nil ->
         {:ok, workflow_id} = workflow_id(reversed_path, ctx)
-        {:error, "input #{value} not set for workflow #{workflow_id}"}
+
+        {:error,
+         %InvalidExpression{
+           type: :input,
+           expression: "#{workflow_id}.inputs.#{value}",
+           value: "missing"
+         }}
 
       error ->
         error
@@ -95,7 +103,13 @@ defmodule Cuerdo.Traversal do
     else
       :error ->
         {:ok, workflow_id} = workflow_id(reversed_path, ctx)
-        {:error, "no output #{value} in workflow #{workflow_id}"}
+
+        {:error,
+         %InvalidExpression{
+           type: :output,
+           expression: "#{workflow_id}.outputs.#{value}",
+           value: "missing"
+         }}
 
       error ->
         error
@@ -122,8 +136,16 @@ defmodule Cuerdo.Traversal do
          {:ok, output_value} <- Map.fetch(step_outputs, value) do
       {:ok, output_value}
     else
-      :error -> {:error, "no output #{value} in step #{name}"}
-      error -> error
+      :error ->
+        {:error,
+         %InvalidExpression{
+           type: :output,
+           expression: "$steps.#{name}.outputs.#{value}",
+           value: "missing"
+         }}
+
+      error ->
+        error
     end
   end
 
@@ -151,8 +173,11 @@ defmodule Cuerdo.Traversal do
 
   defp do_fetch_value(["statusCode"], reversed_path, %Context{} = ctx) do
     case response(reversed_path, ctx) do
-      {:ok, %Req.Response{status: status}} -> {:ok, status}
-      error -> error
+      {:ok, %Req.Response{status: status}} ->
+        {:ok, status}
+
+      {:error, %InvalidExpression{} = error} ->
+        {:error, %InvalidExpression{error | expression: "$statusCode"}}
     end
   end
 
@@ -171,7 +196,16 @@ defmodule Cuerdo.Traversal do
          {:ok, param_value} <- Keyword.fetch(path_params, name_atom) do
       {:ok, param_value}
     else
-      :error -> {:error, "invalid request path: #{name}"}
+      {:error, exc} when is_exception(exc) ->
+        {:error, exc}
+
+      :error ->
+        {:error,
+         %InvalidExpression{
+           type: :request_path,
+           expression: "$request.path.#{name}",
+           value: "missing"
+         }}
     end
   end
 
@@ -188,7 +222,8 @@ defmodule Cuerdo.Traversal do
       nil ->
         {:ok, api_call} = api_call(r, reversed_path, ctx)
         headers = Req.get_headers_list(api_call) |> Enum.map_join(", ", &elem(&1, 0))
-        {:error, "header #{normalized_header} missing. Available headers are #{headers}"}
+        msg = "Available headers: #{headers}"
+        {:error, %InvalidExpression{type: :header, expression: normalized_header, value: msg}}
 
       error ->
         error
@@ -218,8 +253,16 @@ defmodule Cuerdo.Traversal do
          {:ok, component_value} <- Map.fetch(component, value) do
       {:ok, component_value}
     else
-      :error -> {:error, "invalid component: #{type}.#{value}"}
-      error -> error
+      :error ->
+        {:error,
+         %InvalidExpression{
+           type: :component,
+           expression: "#{type}.#{value}",
+           value: "not in document"
+         }}
+
+      error ->
+        error
     end
   end
 
@@ -235,14 +278,18 @@ defmodule Cuerdo.Traversal do
     end
   end
 
-  defp do_fetch_value(_pointer, _rev_path, _context) do
-    {:error, "does not match any valid expression"}
+  defp do_fetch_value(pointer, _rev_path, _context) do
+    {:error, %InvalidExpression{type: :unknown, expression: pointer, value: ""}}
   end
 
   defp workflow_id([idx, "workflows" | _], %Context{} = ctx) when is_integer(idx) do
     case Enum.fetch(ctx.document.workflows, idx) do
-      :error -> {:error, "invalid workflow index #{idx}"}
-      {:ok, workflow} -> {:ok, workflow.workflowId}
+      :error ->
+        {:error,
+         %InvalidExpression{type: :workflow_index, expression: "workflows.#{idx}", value: idx}}
+
+      {:ok, workflow} ->
+        {:ok, workflow.workflowId}
     end
   end
 
@@ -253,8 +300,16 @@ defmodule Cuerdo.Traversal do
          {:ok, %{stepId: step_id}} <- Enum.fetch(steps, idx) do
       {:ok, step_id}
     else
-      :error -> {:error, "invalid step index #{idx}"}
-      {:error, exc} = error when is_exception(exc) -> error
+      :error ->
+        {:error,
+         %InvalidExpression{
+           type: :step_index,
+           expression: idx,
+           value: "#{workflow_id}.steps.#{idx}"
+         }}
+
+      {:error, exc} = error when is_exception(exc) ->
+        error
     end
   end
 
@@ -265,9 +320,6 @@ defmodule Cuerdo.Traversal do
     with {:ok, workflow_id} <- workflow_id(reversed_path, ctx),
          {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx) do
       Context.fetch_step_request(ctx, workflow_id, step_id)
-    else
-      {:error, exc} = error when is_exception(exc) -> error
-      {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
 
@@ -275,15 +327,12 @@ defmodule Cuerdo.Traversal do
     with {:ok, workflow_id} <- workflow_id(reversed_path, ctx),
          {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx) do
       Context.fetch_step_response(ctx, workflow_id, step_id)
-    else
-      {:error, exc} = error when is_exception(exc) -> error
-      {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
 
   defp field_to_atom(field) when is_binary(field) do
     {:ok, String.to_existing_atom(field)}
   rescue
-    _ -> {:error, "invalid field: #{field}"}
+    _ -> {:error, %InvalidExpression{type: :field, expression: field, value: "invalid"}}
   end
 end

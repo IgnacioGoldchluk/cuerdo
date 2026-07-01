@@ -50,8 +50,9 @@ defmodule Cuerdo.Arazzo.ParameterTest do
 
       assert {:error,
               %InvalidExpression{
+                type: :parameter,
                 expression: "$components.parameters.fooPath",
-                message: "not in document parameters"
+                value: "not in document"
               }} =
                Parameter.resolve(parameters, path, ctx)
     end
@@ -64,8 +65,9 @@ defmodule Cuerdo.Arazzo.ParameterTest do
 
       assert {:error,
               %InvalidExpression{
+                type: :response,
                 expression: "$statusCode",
-                message: "response not set for createAndRetrieveBook.createBookStep"
+                value: "createAndRetrieveBook.createBookStep request not set"
               }} =
                Parameter.resolve(parameters, path, ctx)
     end

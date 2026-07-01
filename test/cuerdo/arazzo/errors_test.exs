@@ -53,7 +53,7 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
     Req.Test.expect(Cuerdo.Resolver, &Req.Test.transport_error(&1, :econnrefused))
 
     assert {:error,
-            %Errors.ExecutionError{path: ["createAndRetrieveBook"], error: %JSV.BuildError{}}} =
+            %Errors.ExecutionError{error: %Errors.InvalidSchema{type: :invalid_inputs_schema}}} =
              Arazzo.run_workflow(%{"book" => book}, workflow_id, document)
   end
 
@@ -242,22 +242,31 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
     end
 
     test "formats error message for InvalidExpression" do
-      msg = "invalid expression: $requestbody - does not match any valid expression"
+      msg = "invalid unknown expression: $requestbody - does not match any valid expression"
 
       assert_raise Errors.InvalidExpression, msg, fn ->
         raise Errors.InvalidExpression,
           expression: "$requestbody",
-          message: "does not match any valid expression"
+          type: :unknown,
+          value: "does not match any valid expression"
       end
 
-      assert_raise Errors.InvalidExpression, "invalid expression: foo/bar - incomplete", fn ->
-        raise Errors.InvalidExpression, expression: {"foo", "bar"}, message: "incomplete"
+      msg2 = "invalid unknown expression: foo/bar - does not match any valid expression"
+
+      assert_raise Errors.InvalidExpression, msg2, fn ->
+        raise Errors.InvalidExpression,
+          expression: {"foo", "bar"},
+          type: :unknown,
+          value: "does not match any valid expression"
       end
 
       expression = %{"type" => "jsonpath", "context" => "$request.body", "selector" => "$.foo"}
 
-      assert_raise Errors.InvalidExpression, ~r/invalid expression/, fn ->
-        raise Errors.InvalidExpression, expression: expression, message: "invalid selector"
+      assert_raise Errors.InvalidExpression, ~r/invalid jsonpath expression/, fn ->
+        raise Errors.InvalidExpression,
+          type: :jsonpath,
+          expression: expression,
+          value: "invalid selector"
       end
     end
 
