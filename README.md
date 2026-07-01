@@ -34,6 +34,14 @@ Download the executable from the [releases](https://github.com/IgnacioGoldchluk/
 ./cuerdo_linux_amd64 path/to/arazzo.yaml
 ```
 
+### Github Action
+Add to your Github Actions workflow:
+```yaml
+- uses: IgnacioGoldchluk/cuerdo-action@v1
+  with:
+    document: path/to/arazzo.yaml
+```
+
 ### Dockerfile
 Run `cuerdo` from a Docker image. Keep in mind you need to mount the local files.
 ```sh
