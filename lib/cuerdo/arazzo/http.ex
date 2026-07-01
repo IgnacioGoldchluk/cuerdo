@@ -3,7 +3,7 @@ defmodule Cuerdo.Arazzo.HTTP do
   Validations for request and responses in Arazzo workflows
   """
 
-  alias Cuerdo.Errors.InvalidRequest
+  alias Cuerdo.Errors.InvalidSchema
 
   @doc """
   Validates the body matches the schema in the context of the source description.
@@ -14,7 +14,7 @@ defmodule Cuerdo.Arazzo.HTTP do
   def validate_body(body, schema, source_description, resolver)
 
   def validate_body(_, %{"components" => _}, _, _) do
-    {:error, %InvalidRequest{message: "operation schema contains ambiguous key: 'components'"}}
+    {:error, %InvalidSchema{type: :ambiguous_key, value: "components"}}
   end
 
   def validate_body(request_body, operation_schema, openapi_schema, resolver) do

@@ -3,7 +3,7 @@ defmodule Cuerdo.Arazzo.RequestBody do
   An Arazzo [Request Body Object](https://spec.openapis.org/arazzo/v1.0.1.html#request-body-object)
   """
   alias Cuerdo.Arazzo.{Context, HTTP, Replacement, RuntimeExpression}
-  alias Cuerdo.Errors.InvalidRequest
+  alias Cuerdo.Errors.{InvalidRequest, InvalidSchema}
   alias Cuerdo.OpenAPI
 
   alias Cuerdo.Traversal
@@ -65,16 +65,13 @@ defmodule Cuerdo.Arazzo.RequestBody do
     if is_nil(body) do
       :ok
     else
-      {:error,
-       %InvalidRequest{
-         message: "requestBody defined but operations doesn't accept request body"
-       }}
+      {:error, %InvalidRequest{type: :unexpected_body, value: body}}
     end
   end
 
   def matches(nil, %OpenAPI.Operation{requestBody: %{required: required}}, %Context{} = _ctx) do
     case required do
-      true -> {:error, %InvalidRequest{message: "missing required requestBody for operation"}}
+      true -> {:error, %InvalidRequest{type: :missing_body, value: ""}}
       false -> :ok
     end
   end
@@ -90,11 +87,16 @@ defmodule Cuerdo.Arazzo.RequestBody do
       :ok
     else
       {:matching_body, nil} ->
-        {:error,
-         %InvalidRequest{message: "no matching content-type '#{content_type}' in operation"}}
+        {:error, %InvalidRequest{type: :mismatched_content_type, value: content_type}}
 
-      {:error, exc} when is_exception(exc) ->
-        {:error, %InvalidRequest{message: Exception.message(exc)}}
+      {:error, %JSV.ValidationError{} = exc} ->
+        {:error, %InvalidRequest{type: :mismatched_body_schema, value: Exception.message(exc)}}
+
+      {:error, %JSV.BuildError{} = exc} ->
+        {:error, %InvalidSchema{type: :invalid_request_schema, value: Exception.message(exc)}}
+
+      {:error, exc} ->
+        {:error, exc}
     end
   end
 end

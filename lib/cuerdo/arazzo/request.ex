@@ -32,7 +32,7 @@ defmodule Cuerdo.Arazzo.Request do
     end
     |> case do
       %URI{scheme: scheme} = uri when scheme not in ["http", "https"] ->
-        {:error, %InvalidRequest{message: "expected HTTP/HTTPS OpenAPI URL, got: #{uri}"}}
+        {:error, %InvalidRequest{type: :invalid_request_scheme, value: to_string(uri)}}
 
       %URI{} = uri ->
         {:ok, to_string(uri)}

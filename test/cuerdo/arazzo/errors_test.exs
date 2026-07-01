@@ -182,10 +182,10 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
     end
 
     test "formats error for InvalidRequest" do
-      msg = "missing required requestBody for operation"
+      msg = "Request body required but not present"
 
-      assert_raise Errors.InvalidRequest, "Invalid request: #{msg}", fn ->
-        raise Errors.InvalidRequest, message: msg
+      assert_raise Errors.InvalidRequest, msg, fn ->
+        raise Errors.InvalidRequest, type: :missing_body, value: ""
       end
     end
 

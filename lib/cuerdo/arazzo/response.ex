@@ -4,7 +4,7 @@ defmodule Cuerdo.Arazzo.Response do
   """
 
   alias Cuerdo.Arazzo.{Context, HTTP}
-  alias Cuerdo.Errors.UnexpectedResponse
+  alias Cuerdo.Errors.{InvalidSchema, UnexpectedResponse}
 
   alias Cuerdo.OpenAPI
 
@@ -59,12 +59,7 @@ defmodule Cuerdo.Arazzo.Response do
          }}
 
       {:error, %JSV.BuildError{} = exc} ->
-        {:error,
-         %UnexpectedResponse{
-           type: :invalid_response_schema,
-           value: body,
-           details: Exception.message(exc)
-         }}
+        {:error, %InvalidSchema{type: :invalid_response_schema, value: Exception.message(exc)}}
     end
   end
 end

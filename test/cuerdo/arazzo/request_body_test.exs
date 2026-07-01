@@ -3,7 +3,7 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
 
   alias Cuerdo.Arazzo.{Context, RequestBody}
 
-  alias Cuerdo.Errors.InvalidRequest
+  alias Cuerdo.Errors.{InvalidRequest, InvalidSchema}
   alias Cuerdo.OpenAPI
 
   import Cuerdo.ArazzoFixtures
@@ -174,7 +174,7 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
         Context.new!(example_document())
         |> Context.put_source_description("bookStore", example_openapi_json())
 
-      assert {:error, %InvalidRequest{message: "could not build JSON schema" <> _}} =
+      assert {:error, %InvalidSchema{type: :invalid_request_schema}} =
                RequestBody.matches(body, operation, ctx)
     end
 
@@ -224,7 +224,7 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
 
       assert :ok == RequestBody.matches(body, operation, ctx)
 
-      assert {:error, _} =
+      assert {:error, %InvalidRequest{type: :mismatched_body_schema}} =
                RequestBody.matches(
                  %{
                    body: %{"isbn" => "123"},
@@ -267,7 +267,7 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
 
       assert :ok == RequestBody.matches(body, operation, ctx)
 
-      assert {:error, %InvalidRequest{message: msg}} =
+      assert {:error, %InvalidRequest{type: :mismatched_body_schema}} =
                RequestBody.matches(
                  %{
                    body: %{"title" => "The book", "author" => "John Doe", "isbn" => "1"},
@@ -276,8 +276,6 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
                  operation,
                  ctx
                )
-
-      assert String.starts_with?(msg, "json schema validation failed")
     end
 
     test "returns error when body is present and operation does not define body" do
@@ -293,14 +291,12 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
           }
         })
 
-      assert {:error, %InvalidRequest{message: msg}} =
+      assert {:error, %InvalidRequest{type: :unexpected_body}} =
                RequestBody.matches(
                  %{body: %{"name" => "foo"}, content_type: "application/json"},
                  operation,
                  default_context()
                )
-
-      assert msg == "requestBody defined but operations doesn't accept request body"
     end
 
     test "returns error when no content type matches" do
@@ -322,10 +318,8 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
 
       body = %{body: "foo", content_type: "application/json"}
 
-      assert {:error, %InvalidRequest{message: msg}} =
+      assert {:error, %InvalidRequest{type: :mismatched_content_type}} =
                RequestBody.matches(body, operation, default_context())
-
-      assert msg == "no matching content-type 'application/json' in operation"
     end
 
     test "returns error when schema has 'components' key" do
@@ -351,10 +345,8 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
 
       body = %{body: "foo", content_type: "application/json"}
 
-      assert {:error, %InvalidRequest{message: msg}} =
+      assert {:error, %InvalidSchema{type: :ambiguous_key, value: "components"}} =
                RequestBody.matches(body, operation, default_context())
-
-      assert msg == "Invalid request: operation schema contains ambiguous key: 'components'"
     end
 
     test "returns error when body is empty and operation body is required" do
@@ -374,10 +366,8 @@ defmodule Cuerdo.Arazzo.RequestBodyTest do
           }
         })
 
-      assert {:error, %InvalidRequest{message: msg}} =
+      assert {:error, %InvalidRequest{type: :missing_body}} =
                RequestBody.matches(nil, operation, default_context())
-
-      assert msg == "missing required requestBody for operation"
     end
 
     test "returns :ok when body is empty and operation body is optional" do
