@@ -53,6 +53,7 @@ defmodule Cuerdo.MixProject do
       {:burrito, "~> 1.0"},
       {:owl, "~> 0.13"},
       {:plug, "~> 1.0"},
+      {:uuid_v7, "~> 0.6.0"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       # YAML syntax highlighting in exdoc
