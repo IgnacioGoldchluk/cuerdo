@@ -16,13 +16,6 @@ defmodule Cuerdo.Report.Result do
     """
   end
 
-  def format_message(%__MODULE__{status: :passed} = result) do
-    """
-    PASSED #{result.workflow_id} in #{execution_time_ms(result)}ms
-    inputs: #{inspect(result.inputs)}
-    """
-  end
-
   def execution_time_ms(%__MODULE__{http_calls: http_calls}) do
     Enum.sum_by(http_calls, & &1.time_ms)
   end

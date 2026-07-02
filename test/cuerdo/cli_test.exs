@@ -12,6 +12,11 @@ defmodule Cuerdo.CLITest do
   end
 
   describe "run/1" do
+    test "early return with missing args" do
+      {:error, %ArgumentError{message: msg}} = CLI.run([])
+      assert msg == "Empty arguments. Pass path/to/arazzo.yaml"
+    end
+
     test "early return with error on invalid args" do
       args = [Path.join(["test", "support", "arazzo.yaml"]), "--mas-runs", "1"]
 

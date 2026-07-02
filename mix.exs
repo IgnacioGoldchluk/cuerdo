@@ -16,7 +16,8 @@ defmodule Cuerdo.MixProject do
           Mix.Tasks.Test.CoverageWithIndex,
           Cuerdo.ArazzoFixtures,
           Cuerdo.CLI.Screen.Terminal,
-          Cuerdo.CLI.Screen.Basic
+          Cuerdo.CLI.Screen.Basic,
+          Cuerdo.Object
         ]
       ],
       start_permanent: Mix.env() == :prod,

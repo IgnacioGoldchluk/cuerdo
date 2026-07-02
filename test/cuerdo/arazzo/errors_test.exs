@@ -292,4 +292,46 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
       end
     end
   end
+
+  describe "error_type/1" do
+    test "returns error type for error case" do
+      assert Errors.InvalidInputs.error_type(%Errors.InvalidInputs{}) == "invalid_inputs"
+
+      invalid_schema = %Errors.InvalidSchema{type: :ambiguous_key, value: "components"}
+      assert Errors.InvalidSchema.error_type(invalid_schema) == "invalid_schema:ambiguous_key"
+      msg = "Invalid Operation schema (ambiguous_key): components"
+      assert Exception.message(invalid_schema) == msg
+
+      unexpected_response = %Errors.UnexpectedResponse{type: :mismatched_status_code, value: 200}
+
+      assert Errors.UnexpectedResponse.error_type(unexpected_response) ==
+               "unexpected_response:mismatched_status_code"
+
+      assert Errors.InvalidSourceDescription.error_type(%Errors.InvalidSourceDescription{}) ==
+               "invalid_source_description"
+
+      invalid_expression = %Errors.InvalidExpression{
+        type: :request,
+        expression: "workflowId.stepId",
+        value: "not set"
+      }
+
+      assert Errors.InvalidExpression.error_type(invalid_expression) ==
+               "invalid_expression:request"
+
+      missing_parameters = %Errors.MissingParameters{parameters: [{"name", "path"}]}
+
+      assert Errors.MissingParameters.error_type(missing_parameters) ==
+               "invalid_request:missing_parameters"
+
+      invalid_workflow_id = %Errors.InvalidWorkflowId{id: "invalid", valid_ids: ["id1", "id2"]}
+      assert Errors.InvalidWorkflowId.error_type(invalid_workflow_id) == "invalid_workflow_id"
+
+      invalid_operation = %Errors.InvalidOperation{value: "operationId"}
+      assert Errors.InvalidOperation.error_type(invalid_operation) == "invalid_operation"
+
+      invalid_response = %Errors.InvalidResponse{response: %Req.Response{}}
+      assert Errors.InvalidResponse.error_type(invalid_response) == "invalid_response"
+    end
+  end
 end

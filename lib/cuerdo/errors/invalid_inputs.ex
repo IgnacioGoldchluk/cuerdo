@@ -5,6 +5,6 @@ defmodule Cuerdo.Errors.InvalidInputs do
 
   @impl true
   def message(%{inputs: inputs, message: message}) do
-    "Invalid inputs: #{message}, for #{inspect(inputs, limit: :infinity)}"
+    "Invalid inputs #{message}, for #{inspect(inputs, limit: :infinity)}"
   end
 end

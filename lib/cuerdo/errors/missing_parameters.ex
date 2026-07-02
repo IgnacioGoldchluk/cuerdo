@@ -3,7 +3,7 @@ defmodule Cuerdo.Errors.MissingParameters do
 
   @type t :: %__MODULE__{parameters: [{String.t(), String.t()}]}
 
-  def error_type(_), do: "missing_parameters"
+  def error_type(_), do: "invalid_request:missing_parameters"
 
   @impl true
   def message(%{parameters: parameters}) do
