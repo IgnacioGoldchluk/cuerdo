@@ -4,8 +4,8 @@ defmodule Cuerdo.CLI.Screen.Terminal do
 
   use Agent
 
-  alias Cuerdo.ArazzoCase.Result
   alias Cuerdo.CLI.Screen
+  alias Cuerdo.Report.Result
 
   def start_link do
     Agent.start_link(fn -> %{workflows: %{}, documents: []} end, name: __MODULE__)

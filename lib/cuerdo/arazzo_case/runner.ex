@@ -3,8 +3,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
   alias Cuerdo.Arazzo
   alias Cuerdo.Arazzo.Context
   alias Cuerdo.ArazzoCase.Accumulator
-  alias Cuerdo.ArazzoCase.Result
-  alias Cuerdo.HAR
+  alias Cuerdo.Report.Result
 
   require Logger
 
@@ -48,7 +47,14 @@ defmodule Cuerdo.ArazzoCase.Runner do
         Accumulator.get_results(agent) |> Enum.reverse()
 
       {:error, exc} when is_exception(exc) ->
-        [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
+        [
+          %Result{
+            workflow_id: workflow_id,
+            status: :error,
+            error: Exception.message(exc),
+            http_calls: []
+          }
+        ]
     end
   end
 
@@ -80,24 +86,29 @@ defmodule Cuerdo.ArazzoCase.Runner do
     else
       {:error, exc} when is_exception(exc) ->
         Logger.error("generating tests for #{workflow_id}: #{Exception.message(exc)}")
-        [%Result{workflow_id: workflow_id, status: :error, reason: exc, execution_time_ms: 0}]
-    end
-  end
 
-  # Runs timed workflow
-  defp run_workflow(workflow_inputs, workflow_id, ctx) do
-    :timer.tc(fn -> Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) end, :millisecond)
+        [
+          %Result{
+            workflow_id: workflow_id,
+            status: :error,
+            error: Exception.message(exc),
+            http_calls: []
+          }
+        ]
+    end
   end
 
   defp check_workflow(workflow_inputs, workflow_id, agent) do
     ctx = Accumulator.get_context(agent)
 
-    case run_workflow(workflow_inputs, workflow_id, ctx) do
-      {time_ms, {:ok, updated_ctx}} ->
+    case Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) do
+      {:ok, updated_ctx} ->
+        api_calls = Context.api_calls(updated_ctx)
+
         result = %Result{
           workflow_id: workflow_id,
           inputs: workflow_inputs,
-          execution_time_ms: time_ms,
+          http_calls: api_calls,
           status: :passed
         }
 
@@ -108,14 +119,13 @@ defmodule Cuerdo.ArazzoCase.Runner do
 
         {:ok, nil}
 
-      {time_ms, {:error, exc}} ->
+      {:error, exc} ->
         result = %Result{
           workflow_id: workflow_id,
           inputs: workflow_inputs,
-          execution_time_ms: time_ms,
           status: :failed,
-          reason: exc,
-          logs: HAR.to_har(exc.api_calls)
+          error: exc,
+          http_calls: exc.api_calls
         }
 
         Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)

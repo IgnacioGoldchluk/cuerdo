@@ -1,9 +1,6 @@
 defmodule Cuerdo.Errors.InvalidRequest do
   defexception [:type, :value]
 
-  use Cuerdo.Errors.Error
-
-  @impl Cuerdo.Errors.Error
   def error_type(%{type: type}), do: "invalid_request:#{type}"
 
   @impl true

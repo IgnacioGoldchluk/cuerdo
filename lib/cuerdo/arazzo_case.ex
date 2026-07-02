@@ -130,7 +130,8 @@ defmodule Cuerdo.ArazzoCase do
   use ExUnit.CaseTemplate
 
   alias Cuerdo.Arazzo
-  alias Cuerdo.ArazzoCase.{Result, Runner}
+  alias Cuerdo.ArazzoCase.Runner
+  alias Cuerdo.Report.Result
   alias RockSolid.Resolution.Resolvers.DummyResolver
 
   using do

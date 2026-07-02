@@ -6,8 +6,14 @@ defmodule Cuerdo.Arazzo.Context.APICalls do
     schema: %{
       path: Zoi.list(Zoi.string(), min_length: 1),
       request: Zoi.struct(Req.Request),
-      response: Zoi.struct(Req.Response)
+      response: Zoi.struct(Req.Response),
+      time_ms: Zoi.integer(gte: 0)
     }
 
-  @type t :: %__MODULE__{path: [String.t()], request: Req.Request.t(), response: Req.Response.t()}
+  @type t :: %__MODULE__{
+          path: [String.t()],
+          request: Req.Request.t(),
+          response: Req.Response.t(),
+          time_ms: non_neg_integer()
+        }
 end

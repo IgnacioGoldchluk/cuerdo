@@ -3,9 +3,6 @@ defmodule Cuerdo.Errors.InvalidWorkflowId do
 
   @type t :: %__MODULE__{id: String.t(), valid_ids: [String.t()]}
 
-  use Cuerdo.Errors.Error
-
-  @impl Cuerdo.Errors.Error
   def error_type(_), do: "invalid_workflow_id"
 
   @impl true

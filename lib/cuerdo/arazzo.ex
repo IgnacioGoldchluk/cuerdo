@@ -95,17 +95,17 @@ defmodule Cuerdo.Arazzo do
     %Step{stepId: step_id, successCriteria: success_criteria} = step
 
     with {:ok, request, operation, ctx} <- build_request(step, workflow_parameters, rev_path, ctx),
-         {request, %Req.Response{} = response} <- Req.Request.run_request(request),
-         ctx_req_resp = put_request_response_step(ctx, execution_path, request, response),
+         {time_ms, {req, %Req.Response{} = resp}} <- run_request(request),
+         ctx_req_resp = put_request_response_step(ctx, execution_path, req, resp, time_ms),
          {:ok, new_ctx} <- update_step_outputs(ctx_req_resp, workflow_id, step_id, rev_path),
          :ok <- Criterion.evaluate_many(success_criteria, rev_path, new_ctx),
-         :ok <- Response.matches(response, operation, new_ctx) do
+         :ok <- Response.matches(resp, operation, new_ctx) do
       # There is no need for successActions and failureActions for now. Those might be useful
       # for Arazzo workflows and documentation but not for testing. Tests must never have
       # branching
       {:ok, new_ctx}
     else
-      {%Req.Request{}, exception} ->
+      {_, {%Req.Request{}, exception}} ->
         {:error, ExecutionError.wrap(exception, execution_path)}
 
       {:error, exc} when is_exception(exc) ->
@@ -230,9 +230,9 @@ defmodule Cuerdo.Arazzo do
   end
 
   @doc false
-  def put_request_response_step(%Context{} = ctx, execution_path, request, response) do
+  def put_request_response_step(%Context{} = ctx, execution_path, request, response, time_ms) do
     request = with_decoded_body(request)
-    Context.put_step_request_response(ctx, execution_path, request, response)
+    Context.put_step_request_response(ctx, execution_path, request, response, time_ms)
   end
 
   defp with_decoded_body(%Req.Request{body: nil} = request), do: request
@@ -269,5 +269,11 @@ defmodule Cuerdo.Arazzo do
       request = Step.build_request(base_url, parameters, request_body, operation, step.timeout)
       {:ok, request, operation, ctx}
     end
+  end
+
+  @spec run_request(Req.Request.t()) ::
+          {non_neg_integer(), {Req.Request.t(), Req.Response.t() | Exception.t()}}
+  defp run_request(%Req.Request{} = request) do
+    :timer.tc(fn -> Req.Request.run_request(request) end, :millisecond)
   end
 end

@@ -244,9 +244,17 @@ defmodule Cuerdo.Arazzo.Context do
         %__MODULE__{api_calls: api_calls, api_calls_global_ref: api_calls_agent} = ctx,
         execution_path,
         %Req.Request{} = request,
-        %Req.Response{} = response
+        %Req.Response{} = response,
+        time_ms
       ) do
-    api_call = APICalls.new!(%{path: execution_path, request: request, response: response})
+    api_call =
+      APICalls.new!(%{
+        path: execution_path,
+        request: request,
+        response: response,
+        time_ms: time_ms
+      })
+
     APICalls.WorkflowStorage.store(api_calls_agent, api_call)
 
     %__MODULE__{ctx | api_calls: [api_call | api_calls]}

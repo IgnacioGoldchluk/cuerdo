@@ -5,7 +5,7 @@ defmodule Cuerdo.ArazzoCase.Accumulator do
   use Agent
 
   alias Cuerdo.Arazzo.Context
-  alias Cuerdo.ArazzoCase.Result
+  alias Cuerdo.Report.Result
 
   def start_link(%Context{} = context) do
     Agent.start_link(fn -> {[], context} end)

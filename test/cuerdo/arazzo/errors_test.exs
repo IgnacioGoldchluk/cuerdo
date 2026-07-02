@@ -292,38 +292,4 @@ defmodule Cuerdo.Arazzo.ErrorsTest do
       end
     end
   end
-
-  describe "JSON encoding" do
-    test "encodes InvalidFile" do
-      error = %Errors.InvalidFile{filename: "arazzo.yaml", reason: :enoent}
-      assert %{"type" => "invalid_file"} = JSON.encode!(error) |> JSON.decode!()
-    end
-
-    test "encodes InvalidExpression" do
-      error = %Errors.InvalidExpression{
-        type: :jsonpath,
-        expression: "response.body#/id",
-        value: ""
-      }
-
-      assert %{"type" => "invalid_expression:jsonpath"} = JSON.encode!(error) |> JSON.decode!()
-    end
-
-    test "encodes InvalidDocument" do
-      document = %{"invalid" => "document"}
-      {:error, %Errors.InvalidDocument{} = error} = Cuerdo.Arazzo.Context.new(document)
-      assert %{"type" => "invalid_document"} = JSON.encode!(error) |> JSON.decode!()
-    end
-
-    test "encodes FailedCriterion" do
-      error = %Errors.FailedCriterion{
-        type: :regex,
-        criterion: "[a-z]",
-        expression: "$request.body#/id",
-        value: "foo"
-      }
-
-      assert %{"type" => "failed_criterion:regex"} = error |> JSON.encode!() |> JSON.decode!()
-    end
-  end
 end

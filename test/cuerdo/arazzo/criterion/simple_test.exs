@@ -25,7 +25,7 @@ defmodule Cuerdo.Arazzo.Criterion.SimpleTest do
       context =
         context
         |> Context.put_step_output(workflow_id, step_id, "bookId", 123)
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       expression = "$stausCode == 201"
 
@@ -61,7 +61,7 @@ defmodule Cuerdo.Arazzo.Criterion.SimpleTest do
       context =
         context
         |> Context.put_step_output(workflow_id, step_id, "bookId", 123)
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       expression = "$statusCode > true"
       assert {:ok, false} == Simple.evaluate(expression, rev_path, context)
@@ -89,7 +89,7 @@ defmodule Cuerdo.Arazzo.Criterion.SimpleTest do
       context =
         context
         |> Context.put_step_output(workflow_id, step_id, "bookId", 123)
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       expression =
         "$steps.createBookStep.outputs.bookId == 123 && $statusCode >= 200 && $statusCode < 400"
@@ -112,7 +112,7 @@ defmodule Cuerdo.Arazzo.Criterion.SimpleTest do
 
       context =
         context
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       expression =
         "$response.body#/name == 'alice' || $response.header.X-Rate-Limit <= '300'"
@@ -135,7 +135,7 @@ defmodule Cuerdo.Arazzo.Criterion.SimpleTest do
 
       context =
         context
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       expression =
         "!($response.header.X-Request-Left <= 2)"

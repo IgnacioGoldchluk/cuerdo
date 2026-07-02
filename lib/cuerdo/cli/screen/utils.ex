@@ -1,5 +1,6 @@
 defmodule Cuerdo.CLI.Screen.Utils do
   @moduledoc false
+  alias Cuerdo.Report.Result
 
   def version do
     Application.spec(:cuerdo) |> Keyword.fetch!(:vsn) |> to_string()
@@ -9,7 +10,7 @@ defmodule Cuerdo.CLI.Screen.Utils do
     total = length(results)
     passed = Enum.filter(results, &(&1.status == :passed)) |> length()
     failed = total - passed
-    exec_time = Enum.sum_by(results, & &1.execution_time_ms)
+    exec_time = Enum.sum_by(results, &Result.execution_time_ms/1)
     "#{passed} passed · #{failed} failed · #{total} total · #{exec_time(exec_time)}"
   end
 

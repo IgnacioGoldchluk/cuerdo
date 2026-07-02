@@ -112,7 +112,7 @@ defmodule Cuerdo.TraversalTest do
       ctx =
         document
         |> Context.new!()
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       rev_path = [0, "steps", 0, "workflows"]
       assert {:ok, 200} = Traversal.fetch_value("$statusCode", rev_path, ctx)
@@ -132,7 +132,7 @@ defmodule Cuerdo.TraversalTest do
       ctx =
         document
         |> Context.new!()
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       rev_path = [0, "steps", 0, "workflows"]
 
@@ -164,7 +164,7 @@ defmodule Cuerdo.TraversalTest do
       ctx =
         document
         |> Context.new!()
-        |> Context.put_step_request_response([workflow_id, step_id], request, response)
+        |> Context.put_step_request_response([workflow_id, step_id], request, response, 0)
 
       rev_path = [0, "steps", 0, "workflows"]
       assert {:ok, url} == Traversal.fetch_value("$url", rev_path, ctx)
@@ -389,7 +389,7 @@ defmodule Cuerdo.TraversalTest do
 
       path = ["createAndRetrieveBook", "createBookStep"]
 
-      ctx = Context.put_step_request_response(ctx, path, %Req.Request{}, %Req.Response{})
+      ctx = Context.put_step_request_response(ctx, path, %Req.Request{}, %Req.Response{}, 0)
 
       assert {:error,
               %Cuerdo.Errors.InvalidExpression{

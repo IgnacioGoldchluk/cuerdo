@@ -1,7 +1,8 @@
 defmodule Cuerdo.ArazzoCaseTest do
   use ExUnit.Case
 
-  alias Cuerdo.ArazzoCase.{Result, Runner}
+  alias Cuerdo.ArazzoCase.Runner
+  alias Cuerdo.Report.Result
 
   import Cuerdo.ArazzoFixtures
 
@@ -91,29 +92,6 @@ defmodule Cuerdo.ArazzoCaseTest do
       end)
 
       %{document: people_document(with_self: true)}
-    end
-
-    test "%Result is JSON encoded for passing and failing results", %{document: document} do
-      workflow_id = "getPeople"
-
-      opts = [
-        json_schema_resolver: Cuerdo.Resolver,
-        max_runs: 2,
-        transform_inputs: %{},
-        max_shrink_steps: 1
-      ]
-
-      [r1, r2, _] = result = Runner.run_all(workflow_id, document, opts)
-      [r1_serialized, r2_serialized, _] = result |> JSON.encode!() |> JSON.decode!()
-
-      assert r1_serialized["workflow_id"] == r1.workflow_id
-      assert r1_serialized["reason"] == nil
-      assert r1_serialized["execution_time_ms"] == r1.execution_time_ms
-      assert r1_serialized["status"] == "passed"
-
-      assert r2_serialized["reason"] == Exception.message(r2.reason)
-      assert r2_serialized["status"] == "failed"
-      assert length(r2_serialized["logs"]["entries"]) == 2
     end
   end
 end

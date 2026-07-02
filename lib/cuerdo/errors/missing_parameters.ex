@@ -3,9 +3,6 @@ defmodule Cuerdo.Errors.MissingParameters do
 
   @type t :: %__MODULE__{parameters: [{String.t(), String.t()}]}
 
-  use Cuerdo.Errors.Error
-
-  @impl Cuerdo.Errors.Error
   def error_type(_), do: "missing_parameters"
 
   @impl true

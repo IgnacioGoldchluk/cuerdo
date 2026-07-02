@@ -36,6 +36,8 @@ defmodule Cuerdo.CLI do
   alias Cuerdo.Arazzo
   alias Cuerdo.ArazzoCase
 
+  alias Cuerdo.Report
+
   alias Cuerdo.CLI
 
   @impl true
@@ -90,8 +92,8 @@ defmodule Cuerdo.CLI do
         |> List.flatten()
 
       new_report = replay_doc_path <> "replay.json"
+      Report.store(parsed_doc, results, new_report)
 
-      ArazzoCase.Report.write(:json, results, new_report, arazzo_document_path)
       CLI.Screen.summary(results, new_report)
 
       {:ok, results}
@@ -129,7 +131,8 @@ defmodule Cuerdo.CLI do
         |> List.flatten()
 
       report_file = Keyword.fetch!(opts, :report_file)
-      ArazzoCase.Report.write(:json, results, report_file, document_path)
+      Report.store(parsed_doc, results, report_file)
+
       CLI.Screen.summary(results, report_file)
 
       {:ok, results}

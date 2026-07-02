@@ -60,7 +60,8 @@ defmodule Cuerdo.Arazzo.CriterionTest do
           context,
           [workflow_id, step_id],
           request,
-          response
+          response,
+          0
         )
 
       criterion =
@@ -112,7 +113,8 @@ defmodule Cuerdo.Arazzo.CriterionTest do
           context,
           [workflow_id, step_id],
           request,
-          response
+          response,
+          0
         )
 
       criterion =
