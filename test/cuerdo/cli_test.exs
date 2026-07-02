@@ -3,6 +3,8 @@ defmodule Cuerdo.CLITest do
 
   alias Cuerdo.CLI
 
+  alias Cuerdo.Report.Result
+
   import Cuerdo.ArazzoFixtures
 
   import ExUnit.CaptureIO
@@ -23,6 +25,52 @@ defmodule Cuerdo.CLITest do
       capture_io(fn ->
         assert {:error, %CLI.Errors.UnexpectedArgs{}} = CLI.run(args)
       end)
+    end
+
+    test "runs failed cases in replay mode" do
+      args = ["replay", Path.join(["test/support/report.json"])]
+
+      # Mock for validating the inputs
+      failed_input = %{"author" => "x", "isbn" => "1-910-20455-X", "title" => "V"}
+      book_id = System.unique_integer([:positive])
+      response_payload = Map.put(failed_input, "id", book_id)
+
+      Req.Test.expect(Cuerdo.Resolver, 1, fn conn ->
+        assert conn.request_path == "/openapi.json"
+        Req.Test.json(conn, example_openapi_json())
+      end)
+
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+        assert conn.request_path == "/openapi.json"
+        Req.Test.json(conn, example_openapi_json())
+      end)
+
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+        assert conn.method == "POST"
+        assert conn.request_path == "/books"
+        assert conn.params == %{"author" => "x", "isbn" => "1-910-20455-X", "title" => "V"}
+
+        conn
+        |> Plug.Conn.put_status(201)
+        |> Req.Test.json(response_payload)
+      end)
+
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+        assert conn.method == "GET"
+        assert conn.request_path == "/books/#{book_id}"
+        Req.Test.json(conn, response_payload)
+      end)
+
+      Req.Test.expect(Cuerdo.Client, 1, fn conn ->
+        assert conn.method == "GET"
+        assert conn.request_path == "/books"
+        Req.Test.json(conn, [response_payload])
+      end)
+
+      {:ok, [%Result{} = result]} = CLI.run(args)
+      assert result.status == :passed
+      assert result.workflow_id == "createAndRetrieveBook"
+      assert result.inputs["book"] == failed_input
     end
 
     test "returns single error result on failure" do

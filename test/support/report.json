@@ -1,0 +1,56 @@
+{
+    "metadata": {
+        "arazzo_name": "Bookstore workflow",
+        "arazzo_version": "1.0.1",
+        "cuerdo_version": "0.6.0",
+        "document_location": "arazzo.yaml",
+        "run_id": "019f2340-f2a9-711a-8fe9-9eded263e505"
+    },
+    "results": [
+        {
+            "error": {
+                "location": "createAndRetrieveBook.createBookStep",
+                "type": "unknown",
+                "value": "Invalid key 'id' when traversing '%{\"detail\" => \"Internal Server Error\"}"
+            },
+            "execution_time_ms": 48,
+            "http_calls": [
+                {
+                    "executionPath": "createAndRetrieveBook.createBookStep",
+                    "request": {
+                        "headers": {
+                            "content-type": "application/json",
+                            "user-agent": "req/0.6.1"
+                        },
+                        "method": "POST",
+                        "postData": {
+                            "mimeType": "application/json",
+                            "text": "{\"author\":\"𞆾\",\"isbn\":\"1-910-20455-X\",\"title\":\"V\"}"
+                        },
+                        "queryString": [],
+                        "url": "http://localhost:8000/books"
+                    },
+                    "response": {
+                        "content": {
+                            "mimeType": "application/json",
+                            "text": "{\"detail\":\"Internal Server Error\"}"
+                        },
+                        "headers": {
+                            "content-length": "34",
+                            "content-type": "application/json",
+                            "date": "Thu, 02 Jul 2026 14:34:46 GMT",
+                            "server": "uvicorn"
+                        },
+                        "status": 500
+                    },
+                    "time": 48
+                }
+            ],
+            "inputs": {
+                "book": { "author": "x", "isbn": "1-910-20455-X", "title": "V" }
+            },
+            "status": "FAILED",
+            "workflow_id": "createAndRetrieveBook"
+        }
+    ]
+}

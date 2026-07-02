@@ -11,7 +11,7 @@ defmodule Cuerdo.CLI.ReplayTest do
           "inputs" => %{"days" => 10, "bookId" => 123},
           "logs" => nil,
           "reason" => nil,
-          "status" => "failed",
+          "status" => "FAILED",
           "workflow_id" => "loanBook"
         },
         %{
@@ -21,7 +21,7 @@ defmodule Cuerdo.CLI.ReplayTest do
           },
           "logs" => nil,
           "reason" => nil,
-          "status" => "failed",
+          "status" => "FAILED",
           "workflow_id" => "createAndRetrieveBook"
         },
         %{
@@ -31,7 +31,7 @@ defmodule Cuerdo.CLI.ReplayTest do
           },
           "logs" => nil,
           "reason" => nil,
-          "status" => "failed",
+          "status" => "FAILED",
           "workflow_id" => "createAndRetrieveBook"
         }
       ]
@@ -54,7 +54,7 @@ defmodule Cuerdo.CLI.ReplayTest do
           },
           "logs" => nil,
           "reason" => nil,
-          "status" => "passed",
+          "status" => "PASSED",
           "workflow_id" => "createAndRetrieveBook"
         }
       ]

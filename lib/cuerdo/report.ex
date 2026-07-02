@@ -12,24 +12,37 @@ defmodule Cuerdo.Report do
   @doc """
   Generates and stores a report for the given Arazzo document and results
   """
-  def store(%Document{} = arazzo_document, workflow_results, destination) do
-    report = generate(arazzo_document, workflow_results)
+  def store(%Document{} = arazzo_document, workflow_results, destination, original_file) do
+    report = generate(arazzo_document, workflow_results, original_file)
     File.write(destination, JSON.encode!(report))
   end
 
   @doc """
   Generates a report given the Arazzo document and the map of %{workflow_id => results}
   """
-  @spec generate(Document.t(), %{String.t() => list()}) :: map()
-  def generate(%Document{} = arazzo_document, workflows_results) do
+  @spec generate(Document.t(), %{String.t() => list()}, String.t()) :: map()
+  def generate(%Document{} = arazzo_document, workflows_results, original_file) do
     %{
-      "metadata" => metadata(arazzo_document),
+      "metadata" => metadata(arazzo_document, original_file),
       "results" => Enum.map(workflows_results, &result/1)
     }
   end
 
-  def metadata(%Document{} = arazzo_document) do
+  def fetch_failures(%{"results" => results}) when is_list(results) do
+    {:ok, Enum.filter(results, &(&1["status"] != "PASSED"))}
+  end
+
+  def fetch_failues(_), do: :error
+
+  def fetch_document_location(%{"metadata" => %{"document_location" => location}}) do
+    {:ok, location}
+  end
+
+  def fetch_document_location(_), do: :error
+
+  def metadata(%Document{} = arazzo_document, original_file) do
     %{
+      "document_location" => original_file,
       "cuerdo_version" => @version,
       "arazzo_version" => arazzo_document.arazzo,
       "arazzo_name" => arazzo_document.info.title,
@@ -52,9 +65,18 @@ defmodule Cuerdo.Report do
   defp error_report(nil), do: nil
 
   defp error_report(%ExecutionError{error: error, path: path} = _execution_error) do
+    module = error.__struct__
+
+    error_type =
+      if function_exported?(module, :error_type, 1) do
+        module.error_type(error)
+      else
+        "unknown"
+      end
+
     %{
       "location" => path_to_comment(path),
-      "type" => error.__struct__.error_type(error),
+      "type" => error_type,
       "value" => Exception.message(error)
     }
   end

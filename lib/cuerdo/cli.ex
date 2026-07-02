@@ -73,13 +73,13 @@ defmodule Cuerdo.CLI do
     CLI.Screen.start()
 
     with {:ok, report_document} <- File.read(replay_doc_path),
-         {:ok, report_document} <- JSON.decode(report_document),
-         {:ok, arazzo_document_path} <- Map.fetch(report_document, "arazzo_document"),
-         {:ok, failed_results} <- Map.fetch(report_document, "results"),
+         {:ok, report_document_contents} <- JSON.decode(report_document),
+         {:ok, arazzo_document_path} <- Report.fetch_document_location(report_document_contents),
+         {:ok, failures} <- Report.fetch_failures(report_document_contents),
          {:ok, arazzo_document} <- YamlElixir.read_from_file(arazzo_document_path),
          _ <- CLI.Screen.fetched_document(),
          {:ok, parsed_doc} <- Arazzo.Document.new(arazzo_document) do
-      failures_by_workflow = CLI.Replay.failures_by_workflow_id(failed_results)
+      failures_by_workflow = CLI.Replay.failures_by_workflow_id(failures)
 
       CLI.Screen.started_workflows(Map.keys(failures_by_workflow))
 
@@ -92,7 +92,7 @@ defmodule Cuerdo.CLI do
         |> List.flatten()
 
       new_report = replay_doc_path <> "replay.json"
-      Report.store(parsed_doc, results, new_report)
+      Report.store(parsed_doc, results, new_report, report_document)
 
       CLI.Screen.summary(results, new_report)
 
@@ -131,7 +131,7 @@ defmodule Cuerdo.CLI do
         |> List.flatten()
 
       report_file = Keyword.fetch!(opts, :report_file)
-      Report.store(parsed_doc, results, report_file)
+      Report.store(parsed_doc, results, report_file, document_path)
 
       CLI.Screen.summary(results, report_file)
 
