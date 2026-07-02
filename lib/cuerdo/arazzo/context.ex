@@ -15,9 +15,6 @@ defmodule Cuerdo.Arazzo.Context do
     # Workflow outputs in the form of
     # %{workflowId => %{outputKey => outputValue, steps: %{stepId => output}}}
     :outputs,
-    # List of API request/response calls
-    :api_calls,
-    :api_calls_global_ref,
     # Resolver module for building and validating JSV schemas
     :resolver,
     # Cached remotely fetched Arazzo files and sourceDescriptions. Either a ref to an ets
@@ -48,8 +45,6 @@ defmodule Cuerdo.Arazzo.Context do
            document: document,
            inputs: empty_inputs(document),
            outputs: empty_outputs(document),
-           api_calls: [],
-           api_calls_global_ref: empty_api_calls(),
            resolver: Keyword.fetch!(opts, :resolver),
            cache: create_cache(Keyword.fetch!(opts, :init_cache?))
          }}
@@ -87,8 +82,6 @@ defmodule Cuerdo.Arazzo.Context do
          document: document,
          inputs: empty_inputs(document),
          outputs: empty_outputs(document),
-         api_calls: [],
-         api_calls_global_ref: empty_api_calls(),
          resolver: Keyword.fetch!(opts, :resolver),
          cache: create_cache(Keyword.get(opts, :init_cache?, true))
        }}
@@ -241,7 +234,7 @@ defmodule Cuerdo.Arazzo.Context do
 
   @doc false
   def put_step_request_response(
-        %__MODULE__{api_calls: api_calls, api_calls_global_ref: api_calls_agent} = ctx,
+        %__MODULE__{} = ctx,
         execution_path,
         %Req.Request{} = request,
         %Req.Response{} = response,
@@ -255,16 +248,15 @@ defmodule Cuerdo.Arazzo.Context do
         time_ms: time_ms
       })
 
-    APICalls.WorkflowStorage.store(api_calls_agent, api_call)
-
-    %__MODULE__{ctx | api_calls: [api_call | api_calls]}
+    APICalls.WorkflowStorage.store(api_call)
+    ctx
   end
 
   @doc false
-  def fetch_step_request(%__MODULE__{api_calls: api_calls}, workflow_id, step_id) do
+  def fetch_step_request(workflow_id, step_id) do
     suffix = [workflow_id, step_id]
 
-    case Enum.find(api_calls, fn api_call -> List.ends_with?(api_call.path, suffix) end) do
+    case APICalls.WorkflowStorage.get_http_call(suffix) do
       %APICalls{request: request} ->
         {:ok, request}
 
@@ -278,10 +270,10 @@ defmodule Cuerdo.Arazzo.Context do
     end
   end
 
-  def fetch_step_response(%__MODULE__{api_calls: api_calls}, workflow_id, step_id) do
+  def fetch_step_response(workflow_id, step_id) do
     suffix = [workflow_id, step_id]
 
-    case Enum.find(api_calls, fn api_call -> List.ends_with?(api_call.path, suffix) end) do
+    case APICalls.WorkflowStorage.get_http_call(suffix) do
       %APICalls{response: response} ->
         {:ok, response}
 
@@ -344,28 +336,14 @@ defmodule Cuerdo.Arazzo.Context do
     opts = [resolver: ctx.resolver]
 
     case from_document(document, opts) do
-      {:ok, %__MODULE__{} = new_ctx} ->
-        {:ok,
-         transfer_cache(new_ctx, ctx) |> Map.put(:api_calls_global_ref, ctx.api_calls_global_ref)}
-
-      {:error, exc} = error when is_exception(exc) ->
-        error
+      {:ok, %__MODULE__{} = new_ctx} -> {:ok, transfer_cache(new_ctx, ctx)}
+      {:error, exc} = error when is_exception(exc) -> error
     end
   end
 
   defp create_cache(false), do: nil
   defp create_cache(true), do: Cache.create()
 
-  defp empty_api_calls do
-    {:ok, pid} = APICalls.WorkflowStorage.start_link()
-    pid
-  end
-
-  def api_calls(%__MODULE__{api_calls_global_ref: agent_pid}) do
-    APICalls.WorkflowStorage.get_all(agent_pid)
-  end
-
-  def clear_api_calls(%__MODULE__{api_calls_global_ref: agent_pid}) do
-    APICalls.WorkflowStorage.clear(agent_pid)
-  end
+  def api_calls, do: APICalls.WorkflowStorage.get_all()
+  def clear_api_calls, do: APICalls.WorkflowStorage.reset()
 end

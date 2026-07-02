@@ -102,7 +102,7 @@ defmodule Cuerdo.CLI.Screen.Terminal do
 
   @impl Cuerdo.CLI.Screen
   def summary(results, report_file) do
-    summary = Screen.Utils.summary(results)
+    summary = Screen.Utils.summary(results) |> yellow()
 
     case Enum.find(results, &(&1.status == :failed)) do
       nil ->

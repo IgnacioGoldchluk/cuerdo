@@ -44,7 +44,10 @@ defmodule Cuerdo.ArazzoCase.Runner do
           false -> Cuerdo.CLI.Screen.completed_workflow(workflow_id, :failed)
         end
 
-        Accumulator.get_results(agent) |> Enum.reverse()
+        results = Accumulator.get_results(agent) |> Enum.reverse()
+
+        Agent.stop(agent)
+        results
 
       {:error, exc} when is_exception(exc) ->
         [
@@ -76,11 +79,15 @@ defmodule Cuerdo.ArazzoCase.Runner do
         {:ok, _} ->
           Cuerdo.CLI.Screen.completed_workflow(workflow_id, :passed)
 
-          Accumulator.get_results(agent)
+          results = Accumulator.get_results(agent)
+          Agent.stop(agent)
+          results
 
         {:error, _} ->
           Cuerdo.CLI.Screen.completed_workflow(workflow_id, :failed)
-          Accumulator.get_results(agent)
+          results = Accumulator.get_results(agent)
+          Agent.stop(agent)
+          results
       end
       |> Enum.reverse()
     else
@@ -99,11 +106,12 @@ defmodule Cuerdo.ArazzoCase.Runner do
   end
 
   defp check_workflow(workflow_inputs, workflow_id, agent) do
+    Context.clear_api_calls()
     ctx = Accumulator.get_context(agent)
 
     case Arazzo.run_workflow(workflow_inputs, workflow_id, ctx) do
       {:ok, updated_ctx} ->
-        api_calls = Context.api_calls(updated_ctx)
+        api_calls = Context.api_calls()
 
         result = %Result{
           workflow_id: workflow_id,
@@ -116,7 +124,6 @@ defmodule Cuerdo.ArazzoCase.Runner do
         new_ctx = Context.transfer_cache(ctx, updated_ctx)
         Accumulator.add_result(agent, result)
         Accumulator.put_context(agent, new_ctx)
-
         {:ok, nil}
 
       {:error, exc} ->
@@ -125,7 +132,7 @@ defmodule Cuerdo.ArazzoCase.Runner do
           inputs: workflow_inputs,
           status: :failed,
           error: exc,
-          http_calls: exc.api_calls
+          http_calls: Context.api_calls()
         }
 
         Cuerdo.CLI.Screen.completed_workflow_testcase(workflow_id)

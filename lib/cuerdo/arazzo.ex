@@ -76,7 +76,7 @@ defmodule Cuerdo.Arazzo do
           {:cont, {:ok, new_ctx}}
 
         {:error, e} when is_exception(e) ->
-          api_calls = Context.api_calls(ctx)
+          api_calls = Context.api_calls()
           {:halt, {:error, ExecutionError.wrap(e, step_execution_path, api_calls)}}
       end
     end)

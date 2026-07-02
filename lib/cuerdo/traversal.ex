@@ -319,14 +319,14 @@ defmodule Cuerdo.Traversal do
   defp request(reversed_path, %Context{} = ctx) do
     with {:ok, workflow_id} <- workflow_id(reversed_path, ctx),
          {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx) do
-      Context.fetch_step_request(ctx, workflow_id, step_id)
+      Context.fetch_step_request(workflow_id, step_id)
     end
   end
 
   defp response(reversed_path, %Context{} = ctx) do
     with {:ok, workflow_id} <- workflow_id(reversed_path, ctx),
          {:ok, step_id} <- step_id(reversed_path, workflow_id, ctx) do
-      Context.fetch_step_response(ctx, workflow_id, step_id)
+      Context.fetch_step_response(workflow_id, step_id)
     end
   end
 

@@ -60,8 +60,6 @@ defmodule Cuerdo.Arazzo.ContextTest do
              }
 
       assert ctx.inputs == %{"createAndRetrieveBook" => %{}}
-
-      assert ctx.api_calls == []
     end
 
     @tag skip: "Test as part of a workflow instead"
