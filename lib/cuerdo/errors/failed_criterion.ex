@@ -1,5 +1,9 @@
 defmodule Cuerdo.Errors.FailedCriterion do
   defexception [:expression, :criterion, :type, value: :no_value]
+  use Cuerdo.Errors.Error
+
+  @impl Cuerdo.Errors.Error
+  def error_type(%{type: type}), do: "failed_criterion:#{type}"
 
   @impl true
   def message(%{expression: expression, criterion: criterion, type: type, value: :no_value}) do

@@ -1,12 +1,10 @@
 defmodule Cuerdo.Errors.InvalidDocument do
   defexception [:errors]
 
-  def message(%{errors: errors}) do
-    """
-    Arazzo Document is invalid:
+  use Cuerdo.Errors.Error
 
-    #{stringify(errors |> Zoi.treefy_errors())}
-    """
+  def message(%{errors: errors}) do
+    "Document is invalid: #{stringify(errors |> Zoi.treefy_errors())}"
   end
 
   defp stringify(errors, rev_path \\ []) do
@@ -21,4 +19,7 @@ defmodule Cuerdo.Errors.InvalidDocument do
       end
     end)
   end
+
+  @impl Cuerdo.Errors.Error
+  def error_type(_), do: "invalid_document"
 end

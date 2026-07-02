@@ -8,6 +8,11 @@ defmodule Cuerdo.Errors.InvalidSelector do
           message: String.t()
         }
 
+  use Cuerdo.Errors.Error
+
+  @impl Cuerdo.Errors.Error
+  def error_type(%{type: type}), do: "invalid_selector:#{type}"
+
   @impl true
   def message(%{context: context, selector: selector, type: type, message: message}) do
     """

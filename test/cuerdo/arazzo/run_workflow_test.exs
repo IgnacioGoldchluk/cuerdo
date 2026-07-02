@@ -97,7 +97,7 @@ defmodule Cuerdo.Arazzo.RunWorkflowTest do
 
       assert invalid_document_error
              |> Exception.message()
-             |> String.starts_with?("Arazzo Document")
+             |> String.starts_with?("Document is invalid")
     end
 
     test "returns error for invalid condition", %{document: document} do
